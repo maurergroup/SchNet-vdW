@@ -330,7 +330,7 @@ class qmme(Calculator):
         Calculator.__init__(self, restart, ignore_bad_restart_file,
                             label, atoms=atoms, **kwargs)
 
-    def get_potential_energy(self, atoms=None,force_consistent=True):
+    def get_potential_energy(self, atoms=None,force_consistent=False):
         self.update_properties(atoms)
         return self.energy
 
