@@ -5,7 +5,6 @@ import numpy as np
 from ase import atoms
 from ase.calculators.calculator import Calculator
 
-
 class dftdisp(Calculator):
 
     """ DFT_DISP calculator class.
@@ -25,7 +24,7 @@ class dftdisp(Calculator):
     default_parameters = dict(logfile_name='sdc_recode.log                                    ',
                               sedc_xc='PBE     ',
                               sedc_scheme='TS      ',
-                              sedc_print_level=3,
+                              sedc_print_level=2,
                               sedc_do_pbc=-1,
                               sedc_do_num_f=0,
                               sedc_do_num_stress=0,
@@ -102,7 +101,6 @@ class dftdisp(Calculator):
 
     def get_forces(self, atoms=None):
         self.update_properties(atoms)
-
         forces = eval(self.sdch + 'sedc_forces.transpose()')
         ###REMOVING TRANSLATIONS
         unit_vec = np.zeros([len(forces)*3,3])

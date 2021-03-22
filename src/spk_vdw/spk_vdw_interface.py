@@ -165,7 +165,7 @@ class SpkVdwCalculator(Calculator):
                        "Your model does not support hirshfeld volume rations. Please check the model"
                        )
                 hirshfeld = hirshfeld_model_results["hirshfeld_volumes"].cpu().data.numpy()
-                results["hirsh_volrat"] = hirshfeld
+                results["hirsh_volrat"] = hirshfeld.reshape(-1)
                 #self.set_hirshfeld(results["hirsh_volrat"])
             
             if self.model_stress is not None:

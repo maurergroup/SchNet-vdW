@@ -16,6 +16,7 @@ from schnetpack.utils.script_utils.parsing import build_parser
 from spk_vdw import mbdio
 from spk_vdw import qmme
 from spk_vdw import dftdisp
+from spk_vdw import spk_vdw_interface
 from ase.io import read
 
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
@@ -137,11 +138,12 @@ if __name__ == '__main__':
             model_ase.run_md(time)
             results=np.loadtxt(os.path.join(os.getcwd(),'simulation.log'),skiprows=1)
 
-    # make an optimization with a vdw 
+    # make an optimization with vdw correction 
     if args.mode =="opt_vdw":
         
         natoms = atoms_init.get_number_of_atoms()
-        
+        #atoms_init.set_cell(([1,0,0],[0,1,0],[0,0,1]))
+        #print(atoms_init.cell)
         #calculator = spk.interfaces.AseVdwInterface(atomspath,force_model, os.getcwd(),device=device,
         #                                         hirshfeld_model = hirshfeld_model, 
         #                                         energy = spk.Properties.energy, 
@@ -150,7 +152,7 @@ if __name__ == '__main__':
         #                                         hirshfeld="hirshfeld_volumes",
         #                                         energy_units='eV', forces_units="eV/A",
         #                                         environment_provider=environment_provider)
-        calculator = spk.interfaces.SpkVdwCalculator(force_model, 
+        calculator = spk_vdw_interface.SpkVdwCalculator(force_model, 
                                                      hirshfeld_model = hirshfeld_model,
                                                      device = device,
                                                      energy = spk.Properties.energy,
@@ -162,9 +164,11 @@ if __name__ == '__main__':
         #this is for Olivers model
         if args.vdw == "dftdisp":
             vdw_calc = dftdisp.dftdisp(sedc_scheme="TS-SURF",
-                  sedc_n_groups=1,   #
-                  #sedc_groups=[[0,force_mask],[force_mask,natoms]],
-                  #sedc_pbc_g_switches = [[1,1,1,1,1,1]	,[1,1,1,1,1,1]],
+                  sedc_n_groups=1,
+                  sedc_print_level=7,
+                  sedc_groups=[[0,natoms]],
+                  sedc_pbc_g_switches = [[1,1,1,1,1,1]],
+                  sedc_do_num_f=True,
                   #sedc_tssurf_vfree_div_vbulk = [1.00,1.00,1.00,0.9452]
                   #sedc_pbc_g_only_intra =[0,-1], #TODO not use with Olivers data check control in vdw_pair_ignore ag ag -- ignores vdw
                   sedc_do_standalone=False)
@@ -185,6 +189,8 @@ if __name__ == '__main__':
                 qm_calculators = [calculator],
                 mm_calculators = [vdw_calc],
                 qm_atoms = [[(0,natoms)]],
+                mm_cell = [np.zeros((3,3))],
+                qm_cell = [np.zeros((3,3))],
                 mm_atoms = [[(0,natoms)]],
                 mm_mode = "explicit")
 

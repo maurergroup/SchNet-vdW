@@ -749,7 +749,7 @@ class qmme(Calculator):
                         self.qm_hirshpart[atom]
                     nelem -= 1
             # also add the bulk values here if requested
-            if hasattr(self, hirlast):
+            if hasattr(self, 'hirlast'):
                 for nhf, hirlast in enumerate(self.hirlast):
                     s = slice(hirlast[0], hirlast[1])
                     qm_hirshtmp[s] = [self.hirbulk[nhf]] * (hirlast[1] -
