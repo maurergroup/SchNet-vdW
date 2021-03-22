@@ -1,0 +1,1 @@
+f2py -c -m --fcompiler=gnu95 --f90flags="-O3" sdc sdc_recode.f90
