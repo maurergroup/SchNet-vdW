@@ -1,5 +1,6 @@
 from ase.calculators.calculator import Calculator
 from ase import Atoms
+from ase.constraints import FixAtoms
 import numpy as np
 import os
 from time import strftime, gmtime
@@ -27,7 +28,8 @@ class qmme(Calculator):
                   'qm_cell',            # array or 3x3 arrays
                   'mm_cell',            # array of 3x3 arrays
                   'hirbulk',            # array of floats
-                  'hirlast')            # array of tuples
+                  'hirlast',            # array of tuples
+                  'freeze')             #freeze atoms #Changed JW: added
 
     def __init__(self, restart=None, ignore_bad_restart_file=False,
                  label=os.curdir, atoms=None, logprfx=None,
@@ -322,7 +324,6 @@ class qmme(Calculator):
 
         self.nopt = 0
         self.hirlog = hirlog
-
         # Set the reset-value
         self.reset = reset
 
@@ -510,7 +511,7 @@ class qmme(Calculator):
                 qm_region += self.atoms[slice(self.qm_atoms[region][subregion][0],self.qm_atoms[region][subregion][1])]
         
         # Return the newly created qm_region
-        qm_region.set_constraint()
+        qm_region.set_constraint(FixAtoms(self.freeze)) #changed JW
         return qm_region
         # Append this new created region to the qm_regions - array
         #self.qm_regions.append(qm_region.copy())
@@ -561,7 +562,7 @@ class qmme(Calculator):
             # Append this new created region to the mm_regions - array
             #self.mm_regions.append(self.atoms.copy())
             mm_region = self.atoms.copy()
-            mm_region.set_constraint()
+            mm_region.set_constraint(FixAtoms(self.freeze)) #changed JW
             return mm_region
 
         elif (self.mm_mode == 'complementary') or (self.mm_mode == 'explicit'):
@@ -603,7 +604,7 @@ class qmme(Calculator):
 
             # Append this newly created region to the mm_regions - array
             # self.mm_regions.append(mm_region.copy())
-            mm_region.set_constraint()
+            mm_region.set_constraint(FixAtoms(self.freeze)) #changed JW
             return mm_region
 
     def generate_qmmm_maps(self, atoms):

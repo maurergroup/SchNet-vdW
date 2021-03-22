@@ -166,9 +166,10 @@ if __name__ == '__main__':
             vdw_calc = dftdisp.dftdisp(sedc_scheme="TS-SURF",
                   sedc_n_groups=1,
                   sedc_print_level=7,
-                  sedc_groups=[[0,natoms]],
+                  sedc_groups=[natoms],
                   sedc_pbc_g_switches = [[1,1,1,1,1,1]],
-                  sedc_do_num_f=True,
+                  sedc_do_num_f=True, 
+                  sedc_do_pbc=False,
                   #sedc_tssurf_vfree_div_vbulk = [1.00,1.00,1.00,0.9452]
                   #sedc_pbc_g_only_intra =[0,-1], #TODO not use with Olivers data check control in vdw_pair_ignore ag ag -- ignores vdw
                   sedc_do_standalone=False)
@@ -192,6 +193,7 @@ if __name__ == '__main__':
                 mm_cell = [np.zeros((3,3))],
                 qm_cell = [np.zeros((3,3))],
                 mm_atoms = [[(0,natoms)]],
+                freeze=np.arange(args.force_mask),
                 mm_mode = "explicit")
 
         atoms_init.set_calculator(VDW)
