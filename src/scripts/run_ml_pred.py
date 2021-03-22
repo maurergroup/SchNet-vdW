@@ -170,6 +170,8 @@ if __name__ == '__main__':
                   sedc_pbc_g_switches = [[1,1,1,1,1,1]],
                   sedc_do_num_f=True, 
                   sedc_do_pbc=False,
+                  sedc_pbc_force_tol = 1e-4,
+                  sedc_pbc_energy_tol = 1e-3,
                   #sedc_tssurf_vfree_div_vbulk = [1.00,1.00,1.00,0.9452]
                   #sedc_pbc_g_only_intra =[0,-1], #TODO not use with Olivers data check control in vdw_pair_ignore ag ag -- ignores vdw
                   sedc_do_standalone=False)
