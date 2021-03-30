@@ -18,8 +18,11 @@ from spk_vdw import qmme
 from spk_vdw import dftdisp
 from spk_vdw import spk_vdw_interface
 from ase.io import read
+from ase.optimize import BFGS
+from ase.units import kB
+from ase.optimize.basin import BasinHopping
+from ase.constraints import FixAtoms
 
-logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 
 def get_parser():
     """ Setup parser for command line arguments """
@@ -28,9 +31,11 @@ def get_parser():
     #command-specific
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument('--cuda', help='Set flag to use GPU(s)', action='store_true')
+    parser.add_argument('--nsteps', help='Number of max. optimization steps', type = int, default=200)
     parser.add_argument('--force_mask',help='Atom number of excluded atom for force training', type=int,default=None)
-    parser.add_argument('--mode', help='Type of calculation. Options: sp, opt, md, opt_vdw',default='spk',type=str)
+    parser.add_argument('--mode', help='Type of calculation. Options: sp, opt, md, opt_vdw, bh',default='opt_vdw',type=str)
     parser.add_argument('--vdw',help='Define the type of vdw correction. Options: dftdisp, mbd', default = 'dftdisp', type = str)
+    parser.add_argument('--temp',help='Temperature for Basin Hopping algorithm', default = 100, type = int)
     parser.add_argument('initialcondition', help='Input file')
     parser.add_argument('path', help='Path for the simulation')
     parser.add_argument('modelpath', help='Destination for models and logs')
@@ -117,7 +122,7 @@ if __name__ == '__main__':
     # do an optimization of MD run
     if args.mode == "opt" or args.mode =="md":
         #set a force mask to mask all values that should stay constant
-        model_ase = spk.interfaces.AseVdwInterface(atomspath,force_model,
+        model_ase = spk_vdw_interface.SpkVdwCalculator(atomspath,force_model,
                                                 os.getcwd(),device=device,
                                                 energy=spk.Properties.energy,
                                                 forces=spk.Properties.forces,
@@ -139,7 +144,7 @@ if __name__ == '__main__':
             results=np.loadtxt(os.path.join(os.getcwd(),'simulation.log'),skiprows=1)
 
     # make an optimization with vdw correction 
-    if args.mode =="opt_vdw":
+    if args.mode =="opt_vdw" or args.mode =="bh":
         
         natoms = atoms_init.get_number_of_atoms()
         #atoms_init.set_cell(([1,0,0],[0,1,0],[0,0,1]))
@@ -157,7 +162,7 @@ if __name__ == '__main__':
                                                      device = device,
                                                      energy = spk.Properties.energy,
                                                      forces = spk.Properties.forces,
-                                                     force_mask = args.force_mask,
+                                                     # set in qmme force_mask = args.force_mask,
                                                      hirsh_volrat = "hirshfeld_volumes",  
                                                      energy_units = 'eV', forces_units='eV/A',
                                                      environment_provider = environment_provider)
@@ -170,8 +175,6 @@ if __name__ == '__main__':
                   sedc_pbc_g_switches = [[1,1,1,1,1,1]],
                   sedc_do_num_f=True, 
                   sedc_do_pbc=False,
-                  sedc_pbc_force_tol = 1e-4,
-                  sedc_pbc_energy_tol = 1e-3,
                   #sedc_tssurf_vfree_div_vbulk = [1.00,1.00,1.00,0.9452]
                   #sedc_pbc_g_only_intra =[0,-1], #TODO not use with Olivers data check control in vdw_pair_ignore ag ag -- ignores vdw
                   sedc_do_standalone=False)
@@ -183,6 +186,7 @@ if __name__ == '__main__':
                      xc='1' #1 is for PBE type
                      #commmand='' Command needed? DFT_MBD_AT_rsSCS.x in Geogs file
                      ) # THIS IS FOR SHAYS MODEL
+        atoms_init.set_constraint(FixAtoms(indices=np.arange(args.force_mask)))
  
         VDW = qmme.qmme(atoms=atoms_init,
                 nqm_regions = 1,
@@ -195,12 +199,26 @@ if __name__ == '__main__':
                 mm_cell = [np.zeros((3,3))],
                 qm_cell = [np.zeros((3,3))],
                 mm_atoms = [[(0,natoms)]],
-                freeze=np.arange(args.force_mask),
+                freeze = np.arange(args.force_mask),
                 mm_mode = "explicit")
 
         atoms_init.set_calculator(VDW)
         #model_ase.optimize(fmax=0.05,steps=100)
         filename  = "opt"
-        optimizer = QuasiNewton( atoms_init, trajectory = "%s.traj" %filename, restart = "%s.pkl" %filename,)
-        optimizer.run(fmax=0.05,steps=100)
-        #calculator.optimize(fmax=0.05,steps=1000)
+        
+        if args.mode == "opt_vdw":
+    
+            optimizer = BFGS( atoms_init, trajectory = "%s.traj" %filename, restart="%s.pkl" %filename)
+            optimizer.run(fmax=0.05,steps=args.nsteps)
+    
+        if args.mode == "bh":
+
+            # Set up the basin hopping system
+            bh = BasinHopping(atoms=atoms_init,         # the system to optimize
+                      temperature=300 * kB, # 'temperature' to overcome barriers
+                      dr=0.5,               # maximal stepwidth
+                      optimizer=BFGS,      # optimizer to find local minima
+                      fmax=0.05,             # maximal force for the optimizer
+                      )
+
+            bh.run(100)

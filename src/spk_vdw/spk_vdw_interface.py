@@ -30,7 +30,7 @@ from ase.md.velocitydistribution import (
     Stationary,
     ZeroRotation,
 )
-from ase.optimize import QuasiNewton
+from ase.optimize import BFGS
 from ase.vibrations import Vibrations
 
 from schnetpack.md.utils import MDUnits
@@ -398,7 +398,7 @@ class AseVdwInterface:
 
     def optimize(self, fmax=1.0e-2, steps=1000):
         """
-        Optimize a molecular geometry using the Quasi Newton optimizer in ase
+        Optimize a molecular geometry using the BFGS optimizer in ase
         (BFGS + line search)
 
         Args:
@@ -407,7 +407,7 @@ class AseVdwInterface:
         """
         name = "optimization"
         optimize_file = os.path.join(self.working_dir, name)
-        optimizer = QuasiNewton(
+        optimizer = BFGS(
             self.molecule,
             trajectory="%s.traj" % optimize_file,
             restart="%s.pkl" % optimize_file,
