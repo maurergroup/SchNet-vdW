@@ -22,46 +22,48 @@ class MBD(Calculator):
 
     implemented_properties = ['energy', 'forces', 'stress']
 
-    # default parameters
-    default_parameters = dict(k_grid=None,
-                              scheme='VDW',   #'VDWw' or 'MBD', default is VDW'
-                              params='TS',    #either TS or TSSURF
-                              n_freq=15,
-                              beta='0.83',   #PBE default value
-                              ts_sr='0.94',   #PBE default value
-                              do_rpa=False,
-                              )
-
-    # pound sign designates non-defaulting parameters
-    valid_args = (
-            'k_grid',
-            'scheme',
-            'params',
-            'n_freq',
-            'beta',
-            'ts_sr',
-            'do_rpa')
 
     def __init__(self, restart=None, ignore_bad_restart_file=False,
                  label=os.curdir, atoms=None, **kwargs):
 
-        for arg, val in default_parameters:
+        # default parameters
+        default_parameters = dict(k_grid=None,
+                                  scheme='VDW',   #'VDWw' or 'MBD', default is VDW'
+                                  params='TS',    #either TS or TSSURF
+                                  n_freq=15,
+                                  beta='0.83',   #PBE default value
+                                  ts_sr='0.94',   #PBE default value
+                                  do_rpa=False,
+                                  )
+
+        # pound sign designates non-defaulting parameters
+        valid_args = (
+                'k_grid',
+                'scheme',
+                'params',
+                'n_freq',
+                'beta',
+                'ts_sr',
+                'do_rpa')
+        
+        for arg, val in default_parameters.items():
             setattr(self, arg, val)
 
         # set any additional keyword arguments and overwrite defaults
         # for arg, val in self.parameters.iteritems():
         for arg, val in kwargs.items():
-            if arg in self.valid_args:
+            if arg in valid_args:
                 if arg == 'params' or arg == 'scheme':
                     arg = arg.upper()
                 setattr(self, arg, val)
             else:
                 raise RuntimeError('unknown keyword arg "%s" : not in %s'
-                                   % (arg, self.valid_args))
+                                   % (arg, valid_args))
 
         self.hirshvolrat_is_set = False
-        self.hirsh_volrat = np.ones(len(atoms))
-        self.update_mbd(atoms)
+        self.hirsh_volrat = None
+        #np.ones(len(atoms))
+        #self.update_mbd(atoms)
         
         Calculator.__init__(self, restart, ignore_bad_restart_file,
                             label, atoms, **kwargs)
@@ -72,7 +74,8 @@ class MBD(Calculator):
         if not hasattr(self, 'atoms') or self.atoms != atoms:
             self.calculate(atoms)
 
-    def calculate(self, atoms):
+    def calculate(self, atoms, properties, 
+            system_changes):
         """ actual calculation of all properties. """
 
         self.atoms = atoms.copy()
@@ -94,10 +97,12 @@ class MBD(Calculator):
                 d=20.0,
                 force=True
                 ) 
-        
-       self.results['energy'] = energy * units.Hartree
-       self.results['forces'] = -force * units.Hartree / units.Bohr
-       self.results['stress'] = -np.dot(atoms.get_cell(),stress) * units.Hartree / units.Bohr
+        else: 
+            raise ValueError("mbd: scheme needs to be MBD or VDW")
+
+        self.results['energy'] = energy * units.Hartree
+        self.results['forces'] = -force * units.Hartree / units.Bohr
+        self.results['stress'] = -np.dot(atoms.get_cell(),stress) * units.Hartree / units.Bohr
 
 
     def update_mbd(self, atoms=None):
