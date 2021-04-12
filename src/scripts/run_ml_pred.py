@@ -31,11 +31,12 @@ def get_parser():
     #command-specific
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument('--cuda', help='Set flag to use GPU(s)', action='store_true')
-    parser.add_argument('--nsteps', help='Number of max. optimization steps', type = int, default=200)
-    parser.add_argument('--force_mask',help='Atom number of excluded atom for force training', type=int,default=None)
+    parser.add_argument('--nsteps', help='Number of max. optimization steps', type = int, default=400)
+    parser.add_argument('--force_mask',help='Atom number of excluded atom for force training', type=int,default=0)
     parser.add_argument('--mode', help='Type of calculation. Options: sp, opt, md, opt_vdw, bh',default='opt_vdw',type=str)
     parser.add_argument('--vdw',help='Define the type of vdw correction. Options: dftdisp, mbd', default = 'dftdisp', type = str)
-    parser.add_argument('--temp',help='Temperature for Basin Hopping algorithm', default = 100, type = int)
+    parser.add_argument('--fmax',help='Temperature for Basin Hopping algorithm', default = 0.05, type = float)
+    parser.add_argument('--temp',help='Temperature for Basin Hopping algorithm', default = 300, type = int)
     parser.add_argument('initialcondition', help='Input file')
     parser.add_argument('path', help='Path for the simulation')
     parser.add_argument('modelpath', help='Destination for models and logs')
@@ -129,7 +130,7 @@ if __name__ == '__main__':
                                                 energy_units='eV', forces_units="eV/A",
                                                 force_mask=args.force_mask,environment_provider=environment_provider)
         if args.mode == "opt":
-            model_ase.optimize(fmax=0.05,steps=100)    
+            model_ase.optimize(fmax=args.fmax,steps=args.nsteps)    
             model_ase.compute_normal_modes()
 
         if args.mode == "md":
@@ -186,13 +187,13 @@ if __name__ == '__main__':
                      xc='1' #1 is for PBE type
                      #commmand='' Command needed? DFT_MBD_AT_rsSCS.x in Geogs file
                      ) # THIS IS FOR SHAYS MODEL
-        atoms_init.set_constraint(FixAtoms(indices=np.arange(args.force_mask)))
- 
+        #atoms_init.set_constraint(FixAtoms(indices=np.arange(args.force_mask)))
+        #print(atoms_init)
         VDW = qmme.qmme(atoms=atoms_init,
                 nqm_regions = 1,
                 nmm_regions = 1,
-                qm_pbcs = [False,False,False],
-                mm_pbcs = [False,False,False],
+                qm_pbcs = [True,True,False],
+                mm_pbcs = [True,True,False],
                 qm_calculators = [calculator],
                 mm_calculators = [vdw_calc],
                 qm_atoms = [[(0,natoms)]],
@@ -203,13 +204,13 @@ if __name__ == '__main__':
                 mm_mode = "explicit")
 
         atoms_init.set_calculator(VDW)
-        #model_ase.optimize(fmax=0.05,steps=100)
+        #model_ase.optimize(fmax=args.fmax,steps=100)
         filename  = "opt"
         
         if args.mode == "opt_vdw":
     
             optimizer = BFGS( atoms_init, trajectory = "%s.traj" %filename, restart="%s.pkl" %filename)
-            optimizer.run(fmax=0.05,steps=args.nsteps)
+            optimizer.run(fmax=args.fmax,steps=args.nsteps)
     
         if args.mode == "bh":
 
@@ -218,7 +219,7 @@ if __name__ == '__main__':
                       temperature=300 * kB, # 'temperature' to overcome barriers
                       dr=0.5,               # maximal stepwidth
                       optimizer=BFGS,      # optimizer to find local minima
-                      fmax=0.05,             # maximal force for the optimizer
+                      fmax=args.fmax,             # maximal force for the optimizer
                       )
 
             bh.run(100)
