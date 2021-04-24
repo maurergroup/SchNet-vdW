@@ -51,8 +51,8 @@ mol1, mol2 = ethylcarbamate()
 ec_dimer = Atoms(mol1[3], positions=mol1[0], cell=mol1[1], pbc=(True, True, True))
 ec = Atoms(mol2[3], positions=mol2[0], cell=mol2[1])
 
-calc1 = MBD(scheme="MBD", params="TS", beta=0.83, k_grid=(2,2,2))
-calc2 = MBD(scheme="MBD", params="TS", beta=0.83, k_grid=None)
+calc1 = MBD(scheme="VDW", params="TS", ts_sr=0.83, k_grid=(2,2,2))
+calc2 = MBD(scheme="VDW", params="TS", ts_sr=0.83, k_grid=None)
 
 ec_dimer.set_calculator(calc1)
 ec.set_calculator(calc2)
@@ -81,8 +81,9 @@ for coords, lattice, k_grid, species, vol_ratios in ethylcarbamate():
         lattice *= ang2
     enes_old.append(MBDGeom(
         coords*ang2, 
-        lattice, 
-        k_grid).mbd_energy(alpha_0, C6, R_vdw, 0.83))
+        lattice,
+        k_grid).ts_energy(
+            alpha_0, C6, R_vdw, 0.83))
 
 ene_int = (enes_old[0] - 2 * enes_old[1] )
 #print('energy in eV ', ene_int)
@@ -91,4 +92,4 @@ print(ene_int)
 ene_int_ase = (enes[0] - 2 * enes[1] )
 print(ene_int_ase/Hartree)
 
-assert ene_int_ase == approx(-0.037040868610822564, rel=1e-10)
+assert ene_int_ase == approx(-0.05218213230219945, rel=1e-10)
