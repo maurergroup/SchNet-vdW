@@ -31,8 +31,8 @@ class MBD(FileIOCalculator):
                                 scheme='VDW',   #'VDWw' or 'MBD', default is VDW'
                                 params='TS',    #either TS or TSSURF
                                 nfreq=15,
-                                beta='0.83',   #PBE default value
-                                ts_sr='0.94',   #PBE default value
+                                beta=0.83,   #PBE default value
+                                ts_sr=0.94,   #PBE default value
                                 do_rpa=False,
                                 )
 
@@ -82,9 +82,6 @@ class MBD(FileIOCalculator):
             lattice = np.array(atoms.get_cell()) / units.Bohr
         else:
             lattice = None
-
-        print(atoms.positions)
-        print(lattice)
 
         if not self.hirshvolrat_is_set:
             self.hirsh_volrat = np.ones(len(atoms),dtype=np.float)

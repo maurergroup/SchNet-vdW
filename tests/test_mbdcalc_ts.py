@@ -89,7 +89,9 @@ ene_int = (enes_old[0] - 2 * enes_old[1] )
 #print('energy in eV ', ene_int)
 print(ene_int)
 
-ene_int_ase = (enes[0] - 2 * enes[1] )
-print(ene_int_ase/Hartree)
+ene_int_ase = (enes[0] - 2 * enes[1] )/Hartree
+print(ene_int_ase)
 
-assert ene_int_ase == approx(-0.05218213230219945, rel=1e-10)
+assert ene_int == approx(-0.05218213230219945, rel=1e-10)
+#TODO ASE accuracy for some reason only down to 1e-6
+assert ene_int_ase == approx(-0.05218213230219945, rel=1e-6)
