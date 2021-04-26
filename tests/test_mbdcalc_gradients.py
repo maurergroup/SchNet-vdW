@@ -5,7 +5,9 @@ from pymbd.fortran import MBDGeom
 from pymbd.utils import numerical_gradients, numerical_latt_gradients
 from ase import Atoms
 from ase.units import Hartree, Bohr
+from ase.calculators.test import gradient_test
 from spk_vdw.mbd import MBD
+
 
 ang2 = 1./0.529177249
 ang = 1#./0.529177249
@@ -51,6 +53,8 @@ print(forces)
 
 forces_num = benzene.calc.calculate_numerical_forces(benzene)
 print(forces_num)
+
+gradient_test(benzene)
 
 #TODO ASE can only achieve a force accuracy wrt to numerical by 1e-7
 for i in range(len(benzene.positions)):

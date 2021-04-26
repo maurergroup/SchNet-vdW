@@ -92,14 +92,16 @@ class MBD(FileIOCalculator):
             kind=self.params
             )
 
-        if self.scheme == 'MBD':
-            energy = MBDGeom(
+        mbdgeom = MBDGeom(
                 coords=atoms.positions / units.Bohr, 
                 lattice=lattice, 
                 k_grid=self.k_grid,
                 n_freq=self.nfreq,
                 do_rpa=self.do_rpa,
-                ).mbd_energy(
+                )
+
+        if self.scheme == 'MBD':
+            energy = mbdgeom.mbd_energy(
                 self.alpha_0, 
                 self.C6, 
                 self.R_vdw,
@@ -107,13 +109,7 @@ class MBD(FileIOCalculator):
                 force=True
                 )
         elif self.scheme == 'VDW':
-            energy = MBDGeom(
-                coords=atoms.positions / units.Bohr, 
-                lattice=lattice, 
-                k_grid=self.k_grid,
-                n_freq=self.nfreq,
-                do_rpa=self.do_rpa,                
-            ).ts_energy(
+            energy = mbdgeom.ts_energy(
                 self.alpha_0, 
                 self.C6, 
                 self.R_vdw,
@@ -125,9 +121,14 @@ class MBD(FileIOCalculator):
             raise ValueError("mbd: scheme needs to be MBD or VDW")
 
         self.results['energy'] = energy[0] * units.Hartree
-        self.results['forces'] = -energy[1] * units.Hartree / units.Bohr
-        if all(self.atoms.get_pbc()):       
-            self.results['stress'] = -np.dot(atoms.get_cell(),energy[2]) * units.Hartree / units.Bohr
+        gradients = energy[1] * units.Hartree / units.Bohr
+        self.results['forces'] = -gradients
+        if all(self.atoms.get_pbc()):
+            lattgradients = energy[2] * units.Hartree / units.Bohr
+            stress = np.dot(atoms.get_cell(), lattgradients.transpose(),)+\
+                np.dot(atoms.get_positions().transpose(),gradients)
+            stress = stress / (atoms.get_volume())
+            self.results['stress'] = stress
 
     def set_hirshfeld(self, hirsh_volrat):
         self.hirshvolrat_is_set = True
