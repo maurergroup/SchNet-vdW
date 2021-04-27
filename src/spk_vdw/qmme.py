@@ -1,6 +1,5 @@
 from ase.calculators.calculator import Calculator
 from ase import Atoms
-from ase.constraints import FixAtoms
 import numpy as np
 import os
 from time import strftime, gmtime
@@ -14,7 +13,7 @@ class qmme(Calculator):
 
     """
 
-    implemented_properties = ['energy', 'forces']
+    implemented_properties = ['energy', 'forces', 'stress']
 
     valid_args = ('nqm_regions',        # int
                   'nmm_regions',        # int
@@ -28,8 +27,7 @@ class qmme(Calculator):
                   'qm_cell',            # array or 3x3 arrays
                   'mm_cell',            # array of 3x3 arrays
                   'hirbulk',            # array of floats
-                  'hirlast',            # array of tuples
-                  'freeze')             #freeze atoms #Changed JW: added
+                  'hirlast')            # array of tuples
 
     def __init__(self, restart=None, ignore_bad_restart_file=False,
                  label=os.curdir, atoms=None, logprfx=None,
@@ -94,6 +92,8 @@ class qmme(Calculator):
         for arg in self.valid_args:
             if arg not in kwargs.keys():
                 if arg == 'nqm_regions':
+                    if hasattr(self, 'qm_atoms'):
+                        print(error_head)
                     if hasattr(self, 'qm_atoms'):
                         print(error_head)
                         print(' |  Keyword  nqm_regions  not specified,')
@@ -511,7 +511,8 @@ class qmme(Calculator):
                 qm_region += self.atoms[slice(self.qm_atoms[region][subregion][0],self.qm_atoms[region][subregion][1])]
         
         # Return the newly created qm_region
-        qm_region.set_constraint(FixAtoms(self.freeze)) #changed JW
+        #RJM: THis should be passed to the final qmme object rather than to the subobjects
+        #qm_region.set_constraint(FixAtoms(self.freeze)) #changed JW
         return qm_region
         # Append this new created region to the qm_regions - array
         #self.qm_regions.append(qm_region.copy())
@@ -562,7 +563,7 @@ class qmme(Calculator):
             # Append this new created region to the mm_regions - array
             #self.mm_regions.append(self.atoms.copy())
             mm_region = self.atoms.copy()
-            mm_region.set_constraint(FixAtoms(self.freeze)) #changed JW
+            #mm_region.set_constraint(FixAtoms(self.freeze)) #changed JW
             return mm_region
 
         elif (self.mm_mode == 'complementary') or (self.mm_mode == 'explicit'):
@@ -604,7 +605,7 @@ class qmme(Calculator):
 
             # Append this newly created region to the mm_regions - array
             # self.mm_regions.append(mm_region.copy())
-            mm_region.set_constraint(FixAtoms(self.freeze)) #changed JW
+            #mm_region.set_constraint(FixAtoms(self.freeze)) #changed JW
             return mm_region
 
     def generate_qmmm_maps(self, atoms):
@@ -736,7 +737,6 @@ class qmme(Calculator):
                 self.qm_hirshpart[s] = [self.hirbulk[nhf]] * (hirlast[1] -
                                                               hirlast[0])
 
-        ## reset calculator flag for new evaluation
         self.solved_hvr_qm = [False,]*self.nqm_regions
         # Correct Hirshfeld-Partitioning for smaller portions of the whole
         # atoms-object if explicit or complementary mode is chosen

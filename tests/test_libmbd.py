@@ -11,8 +11,8 @@ from ase import units
 from ase.optimize import BFGS
 from schnetpack.utils.script_utils.settings import get_environment_provider
 from schnetpack.utils.script_utils.parsing import build_parser
-from spk_vdw import mbd
-from spk_vdw import qmme
+from spk_vdw.mbd import MBD
+from spk_vdw.dispcorr import DispersionCorrectionCalculator
 from spk_vdw import spk_vdw_interface
 from ase.io import read
 from ase.units import kB
@@ -53,13 +53,11 @@ benzene2 = Atoms(mol2[1], positions=mol2[0])
 dimer = benzene1 + benzene2
 natoms = len(dimer)
 
-view(dimer)
-
-assert 0
-
 qm_calc = Aims(
+    aims_command='mpirun -np 2 /home/reini/Work/codes/QM-codes/FHI-aims/fhiaims/aims.201231.scalapack.mpi.x',
+    outfilename = "aims.out",
+    species_dir='/home/reini/Work/codes/QM-codes/FHI-aims/fhiaims/species_defaults/light',
     xc='PBE',
-    species_dir='',
     occupation_type = ['gaussian',0.01],
     sc_iter_limit = 100,
     #spin = 'collinear',
@@ -68,9 +66,9 @@ qm_calc = Aims(
     sc_accuracy_eev=1e-3,
     sc_accuracy_rho=1e-6,
     sc_accuracy_forces=1e-4,
-    load_balancing = True,
-    k_grid = None,
-    restart_aims='wvfn.dat',
+    #load_balancing = True,
+    #k_grid = None,
+    #restart_aims='wvfn.dat',
     output = ['hirshfeld'],
 )
 
@@ -81,22 +79,17 @@ vdw_calc = MBD(
     #beta = 0.83 #for MBD
     k_grid=None)
 
-qmme_calc = qmme.qmme(atoms=atoms_init,
-                nqm_regions = 1,
-                nmm_regions = 1,
-                qm_pbcs = [False,False,False],
-                mm_pbcs = [False,False,False],
-                qm_calculators = [qm_calc],
-                mm_calculators = [vdw_calc],
-                qm_atoms = [[(0,natoms)]],
-                mm_cell = [np.zeros((3,3))],
-                qm_cell = [np.zeros((3,3))],
-                mm_atoms = [[(0,natoms)]],
-                mm_mode = "explicit")
+dispcorr = DispersionCorrectionCalculator(
+                qm_calculator = qm_calc,
+                mm_calculator = vdw_calc,
+                )
 
-dimer.set_calculator(VDW)
+dimer.set_calculator(dispcorr)
 
 e = dimer.get_potential_energy()
 f = dimer.get_forces()
 print(e)
 print(f)
+
+opt = BFGS(dimer,trajectory='opt.traj')
+opt.run(fmax=0.05)

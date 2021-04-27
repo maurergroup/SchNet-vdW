@@ -23,7 +23,7 @@ class MBD(FileIOCalculator):
     name = 'MBD'
     implemented_properties = ['energy', 'forces', 'stress']
   
-    def __init__(self, restart=None, ignore_bad_restart_file=False,
+    def __init__(self, restart=None,
                  label=os.curdir, atoms=None, **kwargs):
 
         # default parameters
@@ -63,7 +63,7 @@ class MBD(FileIOCalculator):
         self.hirshvolrat_is_set = False
         self.hirsh_volrat = None
         
-        Calculator.__init__(self, restart, ignore_bad_restart_file,
+        Calculator.__init__(self, restart,
                             label, atoms, **kwargs)
 
     def update_properties(self, atoms):
