@@ -2,9 +2,9 @@ This is a repository of a SchNetPack Calculator capable to predict energies, for
 It is based on the Atomic Simulation Environment and SchNetPack. 
 
 Requirements:
-* SchNetPack
-* ase
-* libmbd
+1. SchNetPack
+2. ase
+3. libmbd
 
 The following installation is recommended:
 
