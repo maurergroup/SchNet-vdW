@@ -1,0 +1,10 @@
+dict(occupation_type=['gaussian', 0.01],
+     output=['hirshfeld'],
+     relativistic=['atomic_zora', 'scalar'],
+     sc_accuracy_eev=0.001,
+     sc_accuracy_etot=1e-06,
+     sc_accuracy_forces=0.0001,
+     sc_accuracy_rho=1e-06,
+     sc_iter_limit=100,
+     species_dir='/home/chem/mssdjc/software/fhiaims/species_defaults/light',
+     xc='pbe')
