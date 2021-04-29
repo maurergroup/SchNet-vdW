@@ -22,6 +22,8 @@ The following installation is recommended:
     b. conda install pytorch torchvision torchaudio cudatoolkit=XX.X -c pytorch
     c. see https://github.com/atomistic-machine-learning/schnetpack for installation of SPK
 6. Install this github repository: execute "pip install ." in this directory
+
+
 Once done, don't forget to set your LD_LIBRARY_PATH.
 
 .. _Python: http://www.python.org/
