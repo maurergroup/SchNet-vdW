@@ -2,14 +2,14 @@ import os
 import numpy as np
 from ase import atoms
 import ase.units as units
-from ase.calculators.calculator import Calculator, FileIOCalculator
+from ase.calculators.calculator import Calculator, all_changes
 try:
     from pymbd import mbd_energy, from_volumes
     from pymbd.fortran import MBDGeom
 except:
     raise ImportError("MBD calculator relies on pymbd. Please install libmbd and pymbd!")
 
-class MBD(FileIOCalculator):
+class MBD(Calculator):
 
     """ MBD calculator class.
 
@@ -69,7 +69,7 @@ class MBD(FileIOCalculator):
                             label, atoms, **kwargs)
 
     def calculate(self, atoms, properties=["energy"], 
-            system_changes):
+            system_changes=all_changes):
         """ actual calculation of all properties. """
 
 
@@ -126,9 +126,10 @@ class MBD(FileIOCalculator):
             else: 
                 raise ValueError("mbd: scheme needs to be MBD or VDW")
 
-            self.results['energy'] = energy[0] * units.Hartree
-
-            if do_force:
+            if not do_force:
+                self.results['energy'] = energy * units.Hartree
+            else:
+                self.results['energy'] = energy[0] * units.Hartree
                 gradients = energy[1] * units.Hartree / units.Bohr
                 self.results['forces'] = -gradients
                 if 'stress' in properties and all(self.atoms.get_pbc()):

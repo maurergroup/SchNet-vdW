@@ -17,6 +17,7 @@ import os
 from ase import units
 from schnetpack.interfaces import SpkCalculator
 from schnetpack.environment import SimpleEnvironmentProvider
+from ase.calculators.calculator import Calculator, all_changes
 
 class SpkVdwCalculatorError(Exception):
     pass #TODO RJM This doesnt look right. Errors should never pass? Is this being used?

@@ -1,4 +1,4 @@
-from ase.calculators.calculator import Calculator
+from ase.calculators.calculator import Calculator, all_changes
 from ase import Atoms
 import numpy as np
 import os
@@ -91,7 +91,7 @@ class DispersionCorrectionCalculator(Calculator):
                             label, **kwargs)
 
     def calculate(self, atoms, properties=['energy'], 
-            system_changes):
+            system_changes=all_changes):
         """ actual calculation of all properties. """
 
         self.atoms = atoms.copy()
