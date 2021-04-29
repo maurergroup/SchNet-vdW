@@ -97,7 +97,7 @@ class SpkVdwCalculator(SpkCalculator):
         SpkCalculator.calculate(
             self,
             atoms,
-            properties,
+            properties, #TODO RJM: we might have to strip hirh_volrat out of properties before passing this in, not sure
             system_changes
         )
 

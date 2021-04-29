@@ -68,13 +68,7 @@ class MBD(FileIOCalculator):
         Calculator.__init__(self, restart,
                             label, atoms, **kwargs)
 
-    def update_properties(self, atoms):
-        """ check if already computed everything for this set of atoms. """
-
-        if not hasattr(self, 'atoms') or self.atoms != atoms:
-            self.calculate(atoms)
-
-    def calculate(self, atoms, properties, 
+    def calculate(self, atoms, properties=["energy"], 
             system_changes):
         """ actual calculation of all properties. """
 
@@ -88,49 +82,58 @@ class MBD(FileIOCalculator):
         if not self.hirshvolrat_is_set:
             self.hirsh_volrat = np.ones(len(atoms),dtype=np.float)
 
-        self.alpha_0, self.C6, self.R_vdw = from_volumes(
-            atoms.get_chemical_symbols(), 
-            self.hirsh_volrat, 
-            kind=self.params
-            )
+        if self.calculation_required(atoms, properties):
 
-        mbdgeom = MBDGeom(
-                coords=atoms.positions / units.Bohr, 
-                lattice=lattice, 
-                k_grid=self.k_grid,
-                n_freq=self.nfreq,
-                do_rpa=self.do_rpa,
+            self.alpha_0, self.C6, self.R_vdw = from_volumes(
+                atoms.get_chemical_symbols(), 
+                self.hirsh_volrat, 
+                kind=self.params
                 )
 
-        if self.scheme == 'MBD':
-            energy = mbdgeom.mbd_energy(
-                self.alpha_0, 
-                self.C6, 
-                self.R_vdw,
-                beta=self.beta,
-                force=True
-                )
-        elif self.scheme == 'VDW':
-            energy = mbdgeom.ts_energy(
-                self.alpha_0, 
-                self.C6, 
-                self.R_vdw,
-                sR=self.ts_sr,
-                d=20.0,
-                force=True
-                ) 
-        else: 
-            raise ValueError("mbd: scheme needs to be MBD or VDW")
+            if 'force' in properties:
+                do_force = True
+            else:
+                do_force = False
 
-        self.results['energy'] = energy[0] * units.Hartree
-        gradients = energy[1] * units.Hartree / units.Bohr
-        self.results['forces'] = -gradients
-        if all(self.atoms.get_pbc()):
-            lattgradients = energy[2] * units.Hartree / units.Bohr
-            stress = np.dot(atoms.get_cell(), lattgradients.transpose(),)+\
-                np.dot(atoms.get_positions().transpose(),gradients)
-            stress = stress / (atoms.get_volume())
-            self.results['stress'] = stress
+            mbdgeom = MBDGeom(
+                    coords=atoms.positions / units.Bohr, 
+                    lattice=lattice, 
+                    k_grid=self.k_grid,
+                    n_freq=self.nfreq,
+                    do_rpa=self.do_rpa,
+                    )
+
+            if self.scheme == 'MBD':
+                energy = mbdgeom.mbd_energy(
+                    self.alpha_0, 
+                    self.C6, 
+                    self.R_vdw,
+                    beta=self.beta,
+                    force=do_force
+                    )
+            elif self.scheme == 'VDW':
+                energy = mbdgeom.ts_energy(
+                    self.alpha_0, 
+                    self.C6, 
+                    self.R_vdw,
+                    sR=self.ts_sr,
+                    d=20.0,
+                    force=do_force
+                    ) 
+            else: 
+                raise ValueError("mbd: scheme needs to be MBD or VDW")
+
+            self.results['energy'] = energy[0] * units.Hartree
+            
+            if do_force:
+                gradients = energy[1] * units.Hartree / units.Bohr
+                self.results['forces'] = -gradients
+                if 'stress' in properties and all(self.atoms.get_pbc()):
+                    lattgradients = energy[2] * units.Hartree / units.Bohr
+                    stress = np.dot(atoms.get_cell(), lattgradients.transpose(),)+\
+                        np.dot(atoms.get_positions().transpose(),gradients)
+                    stress = stress / (atoms.get_volume())
+                    self.results['stress'] = stress
 
     def set_hirshfeld(self, hirsh_volrat):
         self.hirshvolrat_is_set = True
