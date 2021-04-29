@@ -55,6 +55,8 @@ class MBD(FileIOCalculator):
             if arg in valid_args:
                 if arg == 'params' or arg == 'scheme':
                     val = val.upper()
+                    if arg == 'scheme' and val == 'TSSURF':
+                        val = 'TSsurf'
                 setattr(self, arg, val)
             else:
                 raise RuntimeError('unknown keyword arg "%s" : not in %s'
