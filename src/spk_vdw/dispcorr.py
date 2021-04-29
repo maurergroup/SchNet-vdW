@@ -90,51 +90,51 @@ class DispersionCorrectionCalculator(Calculator):
         Calculator.__init__(self, restart,
                             label, **kwargs)
 
-    def update_properties(self, atoms):
-        """ check if already computed everything for this set of atoms. """
-
-        if not hasattr(self, 'atoms') or self.atoms != atoms:
-            self.calculate(atoms)
-
-    def calculate(self, atoms, properties, 
+    def calculate(self, atoms, properties=['energy'], 
             system_changes):
         """ actual calculation of all properties. """
 
         self.atoms = atoms.copy()
 
-        qm_atoms = self.atoms.copy()
-        mm_atoms = self.atoms.copy()
+        if self.calculation_required(atoms, properties):    
+            Calculator.calculate(self, atoms)
+            qm_atoms = self.atoms.copy()
+            mm_atoms = self.atoms.copy()
 
-        del qm_atoms.calc
-        del mm_atoms.calc
-        #QM part
-        if self.reset:
-            self.qm_calculator.reset()
-        qm_atoms.set_calculator(self.qm_calculator)
+            del qm_atoms.calc
+            del mm_atoms.calc
+            #QM part
+            if self.reset:
+                self.qm_calculator.reset()
+            qm_atoms.set_calculator(self.qm_calculator)
 
-        qm_energy = qm_atoms.get_potential_energy()
-        qm_forces = qm_atoms.get_forces()
-        if all(qm_atoms.get_pbc()):
-            qm_stress = qm_atoms.get_stress()
-        if  hasattr(self.qm_calculator, 'get_hirsh_volrat'):
-             self.hirlast = qm_atoms.calc.get_hirsh_volrat()
-        else:
-            self.hirlast = np.ones(len(atoms)) * self.hirbulk
+            qm_energy = qm_atoms.get_potential_energy()
+            if 'forces' in properties:
+                qm_forces = qm_atoms.get_forces()
+            if 'stress' in properties and all(qm_atoms.get_pbc()):
+                qm_stress = qm_atoms.get_stress()
+            
+            if  hasattr(self.qm_calculator, 'get_hirsh_volrat'):
+                self.hirlast = qm_atoms.calc.get_hirsh_volrat()
+            else:
+                self.hirlast = np.ones(len(atoms)) * self.hirbulk
 
-        #MM part
-        mm_atoms.set_calculator(self.mm_calculator)
-        if  hasattr(self.mm_calculator, 'set_hirshfeld'):
-            mm_atoms.calc.set_hirshfeld(self.hirlast)
+            #MM part
+            mm_atoms.set_calculator(self.mm_calculator)
+            if  hasattr(self.mm_calculator, 'set_hirshfeld'):
+                mm_atoms.calc.set_hirshfeld(self.hirlast)
 
-        mm_energy = mm_atoms.get_potential_energy()
-        mm_forces = mm_atoms.get_forces()
-        if all(qm_atoms.get_pbc()):
-            mm_stress = mm_atoms.get_stress()
+            mm_energy = mm_atoms.get_potential_energy()
+            if 'forces' in properties:
+                mm_forces = mm_atoms.get_forces()
+            if 'stress' in properties and all(qm_atoms.get_pbc()):
+                mm_stress = mm_atoms.get_stress()
 
-        self.results['energy'] = qm_energy + mm_energy
-        self.results['forces'] = qm_forces + mm_forces
-        if all(self.atoms.get_pbc()):
-            self.results['stress'] = qm_stress + mm_stress
+            self.results['energy'] = qm_energy + mm_energy
+            if 'forces' in properties:
+                self.results['forces'] = qm_forces + mm_forces
+            if 'stress' in properties and all(self.atoms.get_pbc()):
+                self.results['stress'] = qm_stress + mm_stress
 
-        self.nopt += 1
+            self.nopt += 1
 

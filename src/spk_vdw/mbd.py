@@ -72,6 +72,8 @@ class MBD(FileIOCalculator):
             system_changes):
         """ actual calculation of all properties. """
 
+
+
         self.atoms = atoms.copy()
     
         if all(atoms.get_pbc()):
@@ -83,6 +85,7 @@ class MBD(FileIOCalculator):
             self.hirsh_volrat = np.ones(len(atoms),dtype=np.float)
 
         if self.calculation_required(atoms, properties):
+            Calculator.calculate(self, atoms)
 
             self.alpha_0, self.C6, self.R_vdw = from_volumes(
                 atoms.get_chemical_symbols(), 
@@ -90,7 +93,7 @@ class MBD(FileIOCalculator):
                 kind=self.params
                 )
 
-            if 'force' in properties:
+            if 'forces' in properties:
                 do_force = True
             else:
                 do_force = False
@@ -124,7 +127,7 @@ class MBD(FileIOCalculator):
                 raise ValueError("mbd: scheme needs to be MBD or VDW")
 
             self.results['energy'] = energy[0] * units.Hartree
-            
+
             if do_force:
                 gradients = energy[1] * units.Hartree / units.Bohr
                 self.results['forces'] = -gradients
