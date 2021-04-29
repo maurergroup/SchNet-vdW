@@ -55,7 +55,7 @@ class MBD(Calculator):
             if arg in valid_args:
                 if arg == 'params' or arg == 'scheme':
                     val = val.upper()
-                    if arg == 'scheme' and val == 'TSSURF':
+                    if val == 'TSSURF':
                         val = 'TSsurf'
                 setattr(self, arg, val)
             else:
