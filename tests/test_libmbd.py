@@ -54,9 +54,9 @@ dimer = benzene1 + benzene2
 natoms = len(dimer)
 
 qm_calc = Aims(
-    aims_command='mpirun -np 2 /home/reini/Work/codes/QM-codes/FHI-aims/fhiaims/aims.201231.scalapack.mpi.x',
+    aims_command='/home/chem/mssdjc/software/fhiaims/code/binaries/SCRTP/aims.180128.mpi.x',
     outfilename = "aims.out",
-    species_dir='/home/reini/Work/codes/QM-codes/FHI-aims/fhiaims/species_defaults/light',
+    species_dir='/home/chem/mssdjc/software/fhiaims/species_defaults/light',
     xc='PBE',
     occupation_type = ['gaussian',0.01],
     sc_iter_limit = 100,
