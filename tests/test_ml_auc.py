@@ -48,8 +48,8 @@ def get_parser():
 if __name__ == '__main__':
 
     #parse arguments
-    #parser = get_parser()
-    #args = parser.parse_args()
+    parser = get_parser()
+    args = parser.parse_args()
 
     # Determine the device
     device ="cpu"# torch.device("cuda" if args.cuda else "cpu")
@@ -86,7 +86,6 @@ if __name__ == '__main__':
                                                  device = device,
                                                  energy = spk.Properties.energy,
                                                  forces = spk.Properties.forces,
-						 stress = stress,
                                                  hirsh_volrat = "hirshfeld_volumes",
                                                  energy_units = 'eV', forces_units='eV/A',
                                                  environment_provider = environment_provider)
@@ -94,11 +93,11 @@ if __name__ == '__main__':
 
 
     vdw_calc = MBD(
-        scheme="VDW", #VDW or MBD
-        params="TS",  #TS or TSsurf
+        scheme=args.vdw, #VDW or MBD
+        params=args.ts,  #TS or TSsurf
         ts_sr=0.94,  #for vdw
         #beta = 0.83 #for MBD
-        k_grid=None)#(4,4,1))
+        k_grid=(4,4,1))
     
     dispcorr = DispersionCorrectionCalculator(
                 qm_calculator = qm_calc,
@@ -111,4 +110,4 @@ if __name__ == '__main__':
     e = atoms_init.get_potential_energy()
     f = atoms_init.get_forces()
     opt = BFGS(atoms_init,trajectory='opt.traj')
-    opt.run(fmax=0.05)
+    opt.run(fmax=args.fmax)

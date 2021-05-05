@@ -81,7 +81,6 @@ if __name__ == '__main__':
     #read atoms object
     atomspath = os.path.join(current_path,args.initialcondition)
     atoms_init = ase.io.read(os.path.join(current_path,args.initialcondition))
-    import ase.constraints
     
     natoms = atoms_init.get_number_of_atoms()
     if atoms_init.get_pbc()[0]==True:
@@ -95,7 +94,6 @@ if __name__ == '__main__':
                                                  device = device,
                                                  energy = spk.Properties.energy,
                                                  forces = spk.Properties.forces,
-						 stress = stress,
                                                  hirsh_volrat = "hirshfeld_volumes",
                                                  energy_units = 'eV', forces_units='eV/A',
                                                  environment_provider = environment_provider)
@@ -107,19 +105,15 @@ if __name__ == '__main__':
         params=args.ts,  #TS or TSsurf
         ts_sr=0.94,  #for vdw
         #beta = 0.83 #for MBD
-        k_grid=None)#(4,4,1))
+        k_grid=(4,4,1))
     
     dispcorr = DispersionCorrectionCalculator(
                 qm_calculator = qm_calc,
                 mm_calculator = vdw_calc,
                 )
 
-    atoms_init.set_calculator(qm_calc)
-    c=ase.constraints.FixAtoms(indices=[atom.index for atom in atoms_init if atom.symbol == 'C'] )
-    atoms_init.set_constraint(c) #ase.constraints.FixAtoms(np.arange(686)))
-    print(atoms_init)
+    atoms_init.set_calculator(dispcorr)
     e = atoms_init.get_potential_energy()
     f = atoms_init.get_forces()
-    print(f) 
     opt = BFGS(atoms_init,trajectory='opt.traj')
     opt.run(fmax=args.fmax)
