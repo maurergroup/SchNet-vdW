@@ -105,12 +105,10 @@ if __name__ == '__main__':
                 mm_calculator = vdw_calc,
                 )
 
-    atoms_init.set_calculator(qm_calc)
+    atoms_init.set_calculator(dispcorr)
     c=ase.constraints.FixAtoms(indices=[atom.index for atom in atoms_init if atom.symbol == 'C'] )
     atoms_init.set_constraint(c) #ase.constraints.FixAtoms(np.arange(686)))
-    print(atoms_init)
     e = atoms_init.get_potential_energy()
     f = atoms_init.get_forces()
-    print(f) 
     opt = BFGS(atoms_init,trajectory='opt.traj')
     opt.run(fmax=0.05)

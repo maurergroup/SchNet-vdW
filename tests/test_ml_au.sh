@@ -1,0 +1,1 @@
+python /home/chem/mssdjc/software/SchNet-vdW/tests/test_ml_x2o.py 50_constrained.in Opt50Newlib_vdw /home/chem/mssdjc/Test/Shay/BestModels/EF/ --hirshfeld_modelpath /home/chem/mssdjc/Test/Shay/BestModels/H/ --vdw mbd --ts TS

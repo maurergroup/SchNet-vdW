@@ -1,7 +1,6 @@
 """
-This module provides a ASE calculator class [#ase1]_ for SchNetPack models and is adapted from SPK [#spk1]. 
-It further contains a general Interface to all ASE calculation methods, such as geometry
-optimisation, normal mode computation and molecular dynamics simulations (also adapted from SPK).
+This module provides a an ASE calculator class [#ase1]_ for SchNetPack models derived from SpkCalculator. 
+It adds the option to predict hirshfeld ratios for vdW corrections.
 
 References
 ----------
@@ -15,36 +14,18 @@ References
 
 import os
 
-from schnetpack.data.atoms import AtomsConverter
-from schnetpack.utils.spk_utils import DeprecationHelper
-from schnetpack import Properties
-
 from ase import units
-from ase.calculators.calculator import Calculator, all_changes
-from ase.io import read, write
-from ase.io.trajectory import Trajectory
-from ase.io.xyz import read_xyz, write_xyz
-from ase.md import VelocityVerlet, Langevin, MDLogger
-from ase.md.velocitydistribution import (
-    MaxwellBoltzmannDistribution,
-    Stationary,
-    ZeroRotation,
-)
-from ase.optimize import BFGS
-from ase.vibrations import Vibrations
-
-from schnetpack.md.utils import MDUnits
-
+from schnetpack.interfaces import SpkCalculator
 from schnetpack.environment import SimpleEnvironmentProvider
-
-
+from ase.calculators.calculator import Calculator, all_changes
+from schnetpack import Properties
 class SpkVdwCalculatorError(Exception):
-    pass
+    pass #TODO RJM This doesnt look right. Errors should never pass? Is this being used?
 
 
-class SpkVdwCalculator(Calculator):
+class SpkVdwCalculator(SpkCalculator):
     """
-    ASE calculator for schnetpack machine learning models.
+    ASE calculator for schnetpack machine learning models with vdW.
 
     Args:
         ml_model (schnetpack.AtomisticModel): Trained model for
@@ -61,7 +42,7 @@ class SpkVdwCalculator(Calculator):
     forces = Properties.forces
     stress = Properties.stress
     hirsh_volrat = "hirshfeld_volumes"
-    implemented_properties = [energy, forces, stress, hirsh_volrat,"hirsh_volrat"]
+    implemented_properties = [energy, forces, stress, "hirsh_volrat"]
 
     def __init__(
         self,
@@ -72,46 +53,37 @@ class SpkVdwCalculator(Calculator):
         environment_provider=SimpleEnvironmentProvider(),
         energy=None,
         forces=None,
-        hirsh_volrat=None,
         stress=None,
-        force_mask = 0,
+        hirsh_volrat=None,
         energy_units="eV",
         forces_units="eV/Angstrom",
         stress_units="eV/Angstrom/Angstrom/Angstrom",
         **kwargs
     ):
-        Calculator.__init__(self, **kwargs)
+
+        #initialise base class
+        SpkCalculator.__init__(
+            self,
+            model,
+            device,
+            collect_triples,
+            environment_provider,
+            energy,
+            forces,
+            stress,
+            energy_units=energy_units,
+            forces_units=forces_units,
+            stress_units=stress_units,
+            *kwargs)
         
-        self.model = model
+        #do additional things that are not already done by base init
         self.hirshfeld_model = hirshfeld_model
-        self.model.to(device)
         if self.hirshfeld_model is not None:
             self.hirshfeld_model.to(device)
-            
         else:
-            hirsh_volrat=None
-        self.dftdisp=self.hirsh_volrat
-        self.atoms_converter = AtomsConverter(
-            environment_provider=environment_provider,
-            collect_triples=collect_triples,
-            device=device,
-        )
+            self.hirsh_volrat=hirsh_volrat
 
-        self.model_energy = energy
         self.model_hirshfeld = hirsh_volrat
-        self.model_forces = forces
-        self.model_stress = stress
-        self.force_mask   = force_mask
-        # Convert to ASE internal units
-        # MDUnits parses the given energy units and converts them to atomic units as the common denominator.
-        # These are then converted to ASE units
-        #added self.atomic to convert atomic energies to molecular energies. Should be one if "normal" models are trained
-        
-        self.energy_units = MDUnits.parse_mdunit(energy_units) * units.Ha
-        self.forces_units = MDUnits.parse_mdunit(forces_units) * units.Ha / units.Bohr
-        self.stress_units = (
-            MDUnits.parse_mdunit(stress_units) * units.Ha / units.Bohr ** 3
-        )
 
 
     def calculate(self, atoms=None, properties=["energy"], system_changes=all_changes):
@@ -121,322 +93,28 @@ class SpkVdwCalculator(Calculator):
             properties (list of str): do not use this, no functionality
             system_changes (list of str): List of changes for ASE.
         """
-        # First call original calculator to set atoms attribute
-        # (see https://wiki.fysik.dtu.dk/ase/_modules/ase/calculators/calculator.html#Calculator)
+
+        SpkCalculator.calculate(
+            self,
+            atoms,
+            properties, 
+            system_changes
+        )
 
         if self.calculation_required(atoms, properties):
-            # Convert to schnetpack input format
-            model_inputs = self.atoms_converter(atoms)
-            # Call model
-            model_results = self.model(model_inputs)
-            
-            results = {}
-            # Convert outputs to calculator format
-            if self.model_energy is not None:
-                if self.model_energy not in model_results.keys():
-                    raise SpkVdwCalculatorError(
-                        "'{}' is not a property of your model. Please "
-                        "check the model "
-                        "properties!".format(self.model_energy)
-                    )
-                energy = model_results[self.model_energy].cpu().data.numpy()
-                results[self.energy] = (
-                    energy.item() * self.energy_units #* self.atomic
-                )  # ase calculator should return scalar energy
-
-            if self.model_forces is not None:
-                if self.model_forces not in model_results.keys():
-                    raise SpkVdwCalculatorError(
-                        "'{}' is not a property of your model. Please "
-                        "check the model"
-                        "properties!".format(self.model_forces)
-                    )
-                forces = model_results[self.model_forces].cpu().data.numpy()
-                results[self.forces] = (
-                    forces.reshape((len(atoms), 3)) * self.forces_units #* self.atomic
-                )
-                results[self.forces][:self.force_mask] = 0.0
-
-            
+                   
             if self.model_hirshfeld is not None:
+                model_inputs = self.atoms_converter(atoms)
                 hirshfeld_model_results = self.hirshfeld_model(model_inputs)
-                if "hirshfeld_volumes" not in hirshfeld_model_results.keys():
+                if self.hirsh_volrat not in hirshfeld_model_results.keys():
                     raise SpkVdwCalculatorError(
                        "Your model does not support hirshfeld volume rations. Please check the model"
                        )
-                hirshfeld = hirshfeld_model_results["hirshfeld_volumes"].cpu().data.numpy()
-                results["hirsh_volrat"] = hirshfeld.reshape(-1)
-                #self.set_hirshfeld(results["hirsh_volrat"])
-            
-            if self.model_stress is not None:
-                if atoms.cell.volume <= 0.0:
-                    raise SpkVdwCalculatorError(
-                        "Cell with 0 volume encountered for stress computation"
-                    )
+                hirshfeld = hirshfeld_model_results[self.hirsh_volrat].cpu().data.numpy()
+                self.results["hirsh_volrat"] = hirshfeld.reshape(-1)            
 
-                if self.model_stress not in model_results.keys():
-                    raise SpkVdwCalculatorError(
-                        "'{}' is not a property of your model. Please "
-                        "check the model"
-                        "properties! If desired, stress tensor computation can be "
-                        "activated via schnetpack.utils.activate_stress_computation "
-                        "at ones own risk.".format(self.model_stress)
-                    )
-                stress = model_results[self.model_stress].cpu().data.numpy()
-                results[self.stress] = stress.reshape((3, 3)) * self.stress_units
-
-            self.results = results
-    def get_hirsh_volrat(self):
+    def get_hirsh_volrat(self): 
         if ('output' in self.parameters and
-           'hirshfeld' not in self.parameters['output']):
+           'hirsh_volrat' not in self.parameters['output']):
                 raise NotImplementedError
         return Calculator.get_property(self, 'hirsh_volrat', self.atoms)
-
-    def set_hirshfeld(self, hirsh_volrat):
-        self.hirshvolrat_is_set = True
-        self.hirsh_volrat = self.hirsh_volrat
-
-class AseVdwInterface:
-    """
-    Interface for ASE calculations (optimization and molecular dynamics)
-
-    Args:
-        molecule_path (str): Path to initial geometry
-        ml_model (object): Trained model
-        working_dir (str): Path to directory where files should be stored
-        device (str): cpu or cuda
-    """
-
-    def __init__(
-        self,
-        molecule_path,
-        ml_model,
-        working_dir,
-        hirshfeld_model=None,
-        device="cpu",
-        energy="energy",
-        forces="forces",
-        hirshfeld=None,
-        energy_units="eV",
-        force_mask = 0,
-        forces_units="eV/Angstrom",
-        environment_provider=SimpleEnvironmentProvider(),
-    ):
-        # Setup directory
-        self.working_dir = working_dir
-        if not os.path.exists(self.working_dir):
-            os.makedirs(self.working_dir)
-
-        # Load the molecule
-        self.molecule = None
-        self._load_molecule(molecule_path)
-
-        # Set up calculator
-        calculator = SpkVdwCalculator(
-            ml_model,
-            hirshfeld_model=hirshfeld_model,
-            device=device,
-            energy=energy,
-            forces=forces,
-            hirshfeld = hirshfeld,
-            force_mask = force_mask,
-            energy_units=energy_units,
-            forces_units=forces_units,
-            environment_provider=environment_provider,
-        )
-        self.molecule.set_calculator(calculator)
-        self.get_potential_energy = self.molecule.get_potential_energy() 
-        # Unless initialized, set dynamics to False
-        self.dynamics = False
-
-    def set_hirshfeld(self, hirsh_volrat):
-        self.hirshvolrat_is_set = True
-        self.hirsh_volrat = self.hirshfeld
-
-    def _load_molecule(self, molecule_path):
-        """
-        Load molecule from file (can handle all ase formats).
-
-        Args:
-            molecule_path (str): Path to molecular geometry
-        """
-        file_format = os.path.splitext(molecule_path)[-1]
-        if file_format == "xyz":
-            self.molecule = read_xyz(molecule_path)
-        else:
-            self.molecule = read(molecule_path)
-
-    def save_molecule(self, name, file_format="xyz", append=False):
-        """
-        Save the current molecular geometry.
-
-        Args:
-            name (str): Name of save-file.
-            file_format (str): Format to store geometry (default xyz).
-            append (bool): If set to true, geometry is added to end of file
-                (default False).
-        """
-        molecule_path = os.path.join(self.working_dir, "%s.%s" % (name, file_format))
-        if file_format == "xyz":
-            # For extended xyz format, plain is needed since ase can not parse
-            # the extxyz it writes
-            write_xyz(molecule_path, self.molecule, plain=True)
-        else:
-            write(molecule_path, self.molecule, format=file_format, append=append)
-
-    def calculate_single_point(self):
-        """
-        Perform a single point computation of the energies and forces and
-        store them to the working directory. The format used is the extended
-        xyz format. This functionality is mainly intended to be used for
-        interfaces.
-        """
-        energy = self.molecule.get_potential_energy()
-        forces = self.molecule.get_forces()
-        hirshfeld = self.molecule.get_hirsh_volrat()
-        self.molecule.energy = energy
-        self.molecule.forces = forces
-        self.molecule.hirshfeld = hirshfeld
-
-        self.save_molecule("single_point", file_format="extxyz")
-
-    def init_md(
-        self,
-        name,
-        time_step=0.5,
-        temp_init=300,
-        temp_bath=None,
-        reset=False,
-        interval=1,
-    ):
-        """
-        Initialize an ase molecular dynamics trajectory. The logfile needs to
-        be specifies, so that old trajectories are not overwritten. This
-        functionality can be used to subsequently carry out equilibration and
-        production.
-
-        Args:
-            name (str): Basic name of logfile and trajectory
-            time_step (float): Time step in fs (default=0.5)
-            temp_init (float): Initial temperature of the system in K
-                (default is 300)
-            temp_bath (float): Carry out Langevin NVT dynamics at the specified
-                temperature. If set to None, NVE dynamics are performed
-                instead (default=None)
-            reset (bool): Whether dynamics should be restarted with new initial
-                conditions (default=False)
-            interval (int): Data is stored every interval steps (default=1)
-        """
-
-        # If a previous dynamics run has been performed, don't reinitialize
-        # velocities unless explicitly requested via restart=True
-        if not self.dynamics or reset:
-            self._init_velocities(temp_init=temp_init)
-
-        # Set up dynamics
-        if temp_bath is None:
-            self.dynamics = VelocityVerlet(self.molecule, time_step * units.fs)
-        else:
-            self.dynamics = Langevin(
-                self.molecule,
-                time_step * units.fs,
-                temp_bath * units.kB,
-                1.0 / (100.0 * units.fs),
-            )
-
-        # Create monitors for logfile and a trajectory file
-        logfile = os.path.join(self.working_dir, "%s.log" % name)
-        trajfile = os.path.join(self.working_dir, "%s.traj" % name)
-        logger = MDLogger(
-            self.dynamics,
-            self.molecule,
-            logfile,
-            stress=False,
-            peratom=False,
-            header=True,
-            mode="a",
-        )
-        trajectory = Trajectory(trajfile, "w", self.molecule)
-
-        # Attach monitors to trajectory
-        self.dynamics.attach(logger, interval=interval)
-        self.dynamics.attach(trajectory.write, interval=interval)
-
-    def _init_velocities(
-        self, temp_init=300, remove_translation=True, remove_rotation=True
-    ):
-        """
-        Initialize velocities for molecular dynamics
-
-        Args:
-            temp_init (float): Initial temperature in Kelvin (default 300)
-            remove_translation (bool): Remove translation components of
-                velocity (default True)
-            remove_rotation (bool): Remove rotation components of velocity
-                (default True)
-        """
-        MaxwellBoltzmannDistribution(self.molecule, temp_init * units.kB)
-        if remove_translation:
-            Stationary(self.molecule)
-        if remove_rotation:
-            ZeroRotation(self.molecule)
-
-    def run_md(self, steps):
-        """
-        Perform a molecular dynamics simulation using the settings specified
-        upon initializing the class.
-
-        Args:
-            steps (int): Number of simulation steps performed
-        """
-        if not self.dynamics:
-            raise AttributeError(
-                "Dynamics need to be initialized using the" " 'setup_md' function"
-            )
-
-        self.dynamics.run(steps)
-
-    def optimize(self, fmax=1.0e-2, steps=1000):
-        """
-        Optimize a molecular geometry using the BFGS optimizer in ase
-        (BFGS + line search)
-
-        Args:
-            fmax (float): Maximum residual force change (default 1.e-2)
-            steps (int): Maximum number of steps (default 1000)
-        """
-        name = "optimization"
-        optimize_file = os.path.join(self.working_dir, name)
-        optimizer = BFGS(
-            self.molecule,
-            trajectory="%s.traj" % optimize_file,
-            restart="%s.pkl" % optimize_file,
-        )
-        optimizer.run(fmax, steps)
-
-        # Save final geometry in xyz format
-        self.save_molecule(name)
-
-    def compute_normal_modes(self, write_jmol=True):
-        """
-        Use ase calculator to compute numerical frequencies for the molecule
-
-        Args:
-            write_jmol (bool): Write frequencies to input file for
-                visualization in jmol (default=True)
-        """
-        freq_file = os.path.join(self.working_dir, "normal_modes")
-
-        # Compute frequencies
-        frequencies = Vibrations(self.molecule, name=freq_file)
-        frequencies.run()
-
-        # Print a summary
-        frequencies.summary()
-
-        # Write jmol file if requested
-        if write_jmol:
-            frequencies.write_jmol()
-
-
-MLPotential = DeprecationHelper(SpkVdwCalculator, "MLPotential")
