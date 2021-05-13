@@ -30,6 +30,7 @@ def get_parser():
 
     #command-specific
     parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument('--atomref', help='Set flag to use GPU(s)', action='store_true')
     parser.add_argument('--cuda', help='Set flag to use GPU(s)', action='store_true')
     parser.add_argument('--nsteps', help='Number of max. optimization steps', type = int, default=400)
     parser.add_argument('--force_mask',help='Atom number of excluded atom for force training', type=int,default=0)
@@ -57,6 +58,7 @@ if __name__ == '__main__':
     #read model arguments and load models
     force_model_args =spk.utils.read_from_json(os.path.join(args.modelpath,"args.json"))
     force_model = torch.load(os.path.join(args.modelpath,"best_model"),map_location=device)
+    
     if force_model_args.parallel == True and device == "cpu":
         force_model = force_model.module
     #do the same for the hirshfeld model
@@ -66,9 +68,20 @@ if __name__ == '__main__':
         if hirshfeld_model_args.parallel == True and device == "cpu": #and args.device == "gpu":
             hirshfeld_model = hirshfeld_model.module
     
+    #activate atomrefs
+    """if args.atomref == True:
+        if hasattr(force_model, "atomref"):
+            pass
+        else:
+           db = spk.data.AtomsData(force_model_args.datapath)
+           atomref = db.get_atomref("energy")
+           
+           print(atomref)
+           force_model.atomref = atomref #torch.nn.Embedding.from_pretrained(torch.from_numpy(atomref["energy"].astype(np.float64)))   """
+    db = spk.data.AtomsData(force_model_args.datapath)
+    metadata = db.get_metadata()
     #environment provider for ML
     environment_provider=get_environment_provider(force_model_args,device=device)
-
     #create or overwrite the folder and change directory
     if args.overwrite and os.path.exists(args.path):
         logging.info('Existing folder will be overwritten...')
@@ -81,7 +94,10 @@ if __name__ == '__main__':
     #read atoms object
     atomspath = os.path.join(current_path,args.initialcondition)
     atoms_init = ase.io.read(os.path.join(current_path,args.initialcondition))
-    
+    energy_shift = 0
+    for a in atoms_init.symbols:
+        energy_shift += metadata['subtractedEnergies'][a]
+ 
     natoms = atoms_init.get_number_of_atoms()
     if atoms_init.get_pbc()[0]==True:
         stress = spk.Properties.stress
@@ -93,10 +109,12 @@ if __name__ == '__main__':
                                                  hirshfeld_model = hirshfeld_model,
                                                  device = device,
                                                  energy = spk.Properties.energy,
+                                                 #stress=spk.Properties.stress,
                                                  forces = spk.Properties.forces,
                                                  hirsh_volrat = "hirshfeld_volumes",
                                                  energy_units = 'eV', forces_units='eV/A',
-                                                 environment_provider = environment_provider)
+                                                 environment_provider = environment_provider,
+                                                 energy_shift=energy_shift)
 
 
 
@@ -111,7 +129,6 @@ if __name__ == '__main__':
                 qm_calculator = qm_calc,
                 mm_calculator = vdw_calc,
                 )
-
     atoms_init.set_calculator(dispcorr)
     e = atoms_init.get_potential_energy()
     f = atoms_init.get_forces()

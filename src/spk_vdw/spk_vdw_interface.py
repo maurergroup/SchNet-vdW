@@ -58,6 +58,7 @@ class SpkVdwCalculator(SpkCalculator):
         energy_units="eV",
         forces_units="eV/Angstrom",
         stress_units="eV/Angstrom/Angstrom/Angstrom",
+        energy_shift=None,
         **kwargs
     ):
 
@@ -74,17 +75,18 @@ class SpkVdwCalculator(SpkCalculator):
             energy_units=energy_units,
             forces_units=forces_units,
             stress_units=stress_units,
+            energy_shift=energy_shift,
             *kwargs)
         
         #do additional things that are not already done by base init
         self.hirshfeld_model = hirshfeld_model
+        self.energy_shift = energy_shift
         if self.hirshfeld_model is not None:
             self.hirshfeld_model.to(device)
         else:
             self.hirsh_volrat=hirsh_volrat
 
         self.model_hirshfeld = hirsh_volrat
-
 
     def calculate(self, atoms=None, properties=["energy"], system_changes=all_changes):
         """
@@ -112,7 +114,8 @@ class SpkVdwCalculator(SpkCalculator):
                        )
                 hirshfeld = hirshfeld_model_results[self.hirsh_volrat].cpu().data.numpy()
                 self.results["hirsh_volrat"] = hirshfeld.reshape(-1)            
-
+        if self.energy_shift is not None:
+           self.results["energy"] += self.energy_shift
     def get_hirsh_volrat(self): 
         if ('output' in self.parameters and
            'hirsh_volrat' not in self.parameters['output']):
