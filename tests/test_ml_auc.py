@@ -55,15 +55,15 @@ if __name__ == '__main__':
     device ="cpu"# torch.device("cuda" if args.cuda else "cpu")
 
     #read model arguments and load models
-    modelpath="MLModels/Au_C/EF/"
-    hmodel = "MLModels/Au_C/H/"
-    force_model_args =spk.utils.read_from_json(os.path.join(modelpath,"args.json"))
-    force_model = torch.load(os.path.join(modelpath,"best_model"),map_location=device)
+    #modelpath="MLModels/Au_C/EF/"
+    #hmodel = "MLModels/Au_C/Hirshfeld/"
+    force_model_args =spk.utils.read_from_json(os.path.join(args.modelpath,"args.json"))
+    force_model = torch.load(os.path.join(args.modelpath,"best_model"),map_location=device)
     if force_model_args.parallel == True and device == "cpu":
         force_model = force_model.module
     #do the same for the hirshfeld model
-    hirshfeld_model = torch.load(os.path.join(hmodel,"best_model"),map_location=device)
-    hirshfeld_model_args = spk.utils.read_from_json(os.path.join(hmodel,"args.json"))
+    hirshfeld_model = torch.load(os.path.join(args.hirshfeld_modelpath,"best_model"),map_location=device)
+    hirshfeld_model_args = spk.utils.read_from_json(os.path.join(args.hirshfeld_modelpath,"args.json"))
     if hirshfeld_model_args.parallel == True and device == "cpu": #and args.device == "gpu":
         hirshfeld_model = hirshfeld_model.module
     
@@ -71,7 +71,7 @@ if __name__ == '__main__':
     environment_provider=get_environment_provider(force_model_args,device=device)
 
     #read atoms object
-    atoms_init = ase.io.read("50.in")
+    atoms_init = ase.io.read(args.initialcondition)
     import ase.constraints
     
     natoms = atoms_init.get_number_of_atoms()
