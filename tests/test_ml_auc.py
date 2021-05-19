@@ -42,6 +42,7 @@ def get_parser():
     parser.add_argument('modelpath', help='Destination for models and logs')
     parser.add_argument('--hirshfeld_modelpath', type=str,help = 'Destination for models and logs for hirshfeld volume rations',default=None)
     parser.add_argument('--overwrite', action='store_true', help='Overwrite old directories')
+    parser.add_argument('--nmodels', help = "specify the number of ML models to use", default = 1, type = int)
 
     return parser
 
@@ -57,19 +58,23 @@ if __name__ == '__main__':
     #read model arguments and load models
     #modelpath="MLModels/Au_C/EF/"
     #hmodel = "MLModels/Au_C/Hirshfeld/"
-    force_model_args =spk.utils.read_from_json(os.path.join(args.modelpath,"args.json"))
-    force_model = torch.load(os.path.join(args.modelpath,"best_model"),map_location=device)
-    if force_model_args.parallel == True and device == "cpu":
-        force_model = force_model.module
+    force_model_args={}
+    force_model = {}
+    environment_provider = {}
+    for i in range(args.nmodels):
+        force_model_args[i] = spk.utils.read_from_json(os.path.join(args.modelpath+"/Model%i/"%(i+1),"args.json"))
+        force_model[i] = torch.load(os.path.join(args.modelpath+"/Model%i/"%(i+1),"best_model"),map_location=device)
+        if force_model_args[i].parallel == True and device == "cpu":
+            force_model[i] = force_model[i].module
+        #environment provider for ML, 
+        environment_provider[i]=get_environment_provider(force_model_args[i],device=device)
+
     #do the same for the hirshfeld model
     hirshfeld_model = torch.load(os.path.join(args.hirshfeld_modelpath,"best_model"),map_location=device)
     hirshfeld_model_args = spk.utils.read_from_json(os.path.join(args.hirshfeld_modelpath,"args.json"))
     if hirshfeld_model_args.parallel == True and device == "cpu": #and args.device == "gpu":
         hirshfeld_model = hirshfeld_model.module
     
-    #environment provider for ML
-    environment_provider=get_environment_provider(force_model_args,device=device)
-
     #read atoms object
     atoms_init = ase.io.read(args.initialcondition)
     import ase.constraints
@@ -77,21 +82,26 @@ if __name__ == '__main__':
     natoms = atoms_init.get_number_of_atoms()
     if atoms_init.get_pbc()[0]==True:
         stress = spk.Properties.stress
-        force_model.requires_stress = True
+        for i in range(args.nmodels):
+            force_model[i].requires_stress = True
 
     else:
         stress = None
-    qm_calc = spk_vdw_interface.SpkVdwCalculator(force_model,
+    qm_calcs={}
+    for i in range(args.nmodels):
+        qm_calcs[i] = spk_vdw_interface.SpkVdwCalculator(force_model[i],
                                                  hirshfeld_model = hirshfeld_model,
                                                  device = device,
                                                  energy = spk.Properties.energy,
                                                  forces = spk.Properties.forces,
                                                  hirsh_volrat = "hirshfeld_volumes",
                                                  energy_units = 'eV', forces_units='eV/A',
-                                                 environment_provider = environment_provider)
+                                                 environment_provider = environment_provider[i]
+                                                 )
 
-
-
+    qm_calc=[]
+    for i in range(args.nmodels):
+        qm_calc.append(qm_calcs[i])
     vdw_calc = MBD(
         scheme=args.vdw, #VDW or MBD
         params=args.ts,  #TS or TSsurf
@@ -100,7 +110,7 @@ if __name__ == '__main__':
         k_grid=(4,4,1))
     
     dispcorr = DispersionCorrectionCalculator(
-                qm_calculator = qm_calc,
+                qm_calculator = qm_calc[i],
                 mm_calculator = vdw_calc,
                 )
 
