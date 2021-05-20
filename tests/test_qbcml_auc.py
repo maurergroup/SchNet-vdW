@@ -112,8 +112,8 @@ if __name__ == '__main__':
                                                  energy_units = 'eV', forces_units='eV/A',
                                                  environment_provider = environment_provider,
                                                  fmax=args.fmax,
-                                                 nmodels = args.nmodels
-                                                 )
+                                                 nmodels = args.nmodels,
+                                                 nhmodels = args.nhmodels)
  
     vdw_calc = MBD(
         scheme=args.vdw, #VDW or MBD

@@ -94,6 +94,7 @@ class SpkVdwCalculator(SpkCalculator):
         QueryCalculator.__init__(
                     self,
                     model,#[qbc_model],
+                    hirshfeld_model,
                     device,
                     collect_triples,
                     environment_provider,#[qbc],
@@ -108,7 +109,6 @@ class SpkVdwCalculator(SpkCalculator):
                     nhmodels=nhmodels,
                     *kwargs)
       
-
         #do additional things that are not already done by base init
         self.hirshfeld_model = hirshfeld_model
         #self.model = model
@@ -151,22 +151,7 @@ class SpkVdwCalculator(SpkCalculator):
             system_changes
         )
 
-        if self.calculation_required(atoms, properties):
-            if self.model_hirshfeld is not None:
-                self.query_results["hirsh_volrat"] = np.zeros((self.nhmodels,len(atoms)))
-                model_inputs = self.atoms_converter(atoms)
-                for qbc_h in range(self.nhmodels):
-                    hirshfeld_model_results = self.hirshfeld_model[qbc_h](model_inputs)
-                    if self.hirsh_volrat not in hirshfeld_model_results.keys():
-                        raise SpkVdwCalculatorError(
-                           "Your model does not support hirshfeld volume rations. Please check the model"
-                           )
-                    hirshfeld = hirshfeld_model_results[self.hirsh_volrat].cpu().data.numpy()
-                    self.query_results["hirsh_volrat"][qbc_h]=hirshfeld.reshape(-1)
-                self.results["hirsh_volrat"] = np.mean(self.query_results["hirsh_volrat"],axis=0)
-                self.results["hirsh_volratmean"] = np.mean(self.query_results["hirsh_volrat"],axis=0)
-                self.results["hirsh_volratvar"] = np.var(self.query_results["hirsh_volrat"],axis=0)
-         
+        
         #save the different predictions in self.query_results
         # take the mean and std later
         #print((qbc,"step")
@@ -176,8 +161,7 @@ class SpkVdwCalculator(SpkCalculator):
         print("Fmax mean", self.results["fmaxmean"])
         print("Forcesmax var", self.results["fmaxvar"])
         if "hirsh_volrat" in self.results:
-            print("Hirsh mean", self.results["hirsh_volratmean"])
-            print("Hirsh var", self.results["hirsh_volratvar"])
+            print("Hirsh var", np.mean(self.results["hirsh_volratvar"]))
         if "energystd" in self.results:
             # JW we want 0.05 and can add the error of the models as "noise" ? forces are tricky as I don't know which indices due to constraints. 
             # for instance, some atoms are always fixed and there are super large forces 
@@ -203,10 +187,11 @@ class QueryCalculator(Calculator):
     energy = Properties.energy
     forces = Properties.forces
     stress = Properties.stress
-    implemented_properties = [energy, forces, stress]
+    implemented_properties = [energy, forces, stress, "hirsh_volrat"]
     def __init__(
         self,
         model,
+        hirshfeld_model,
         device="cpu",
         collect_triples=False,
         environment_provider=SimpleEnvironmentProvider(),
@@ -217,11 +202,15 @@ class QueryCalculator(Calculator):
         forces_units="eV/Angstrom",
         stress_units="eV/Angstrom/Angstrom/Angstrom",
         nmodels = int(1),
+        nhmodels = int(1),
         **kwargs
     ):
         self.nmodels = nmodels
+        self.nhmodels = nhmodels
         self.Calculators = {}
         self.query_results = {}
+        self.results = {}
+        self.model_hirshfeld = None
         for qbc in range(self.nmodels):
             Calculator.__init__(self, **kwargs)
             self.Calculators[qbc] = Calculator
@@ -241,7 +230,22 @@ class QueryCalculator(Calculator):
             self.energy_units = MDUnits.unit2unit(energy_units, "eV")
             self.forces_units = MDUnits.unit2unit(forces_units, "eV/Angstrom")
             self.stress_units = MDUnits.unit2unit(stress_units, "eV/A/A/A")
-
+        for qbc_h in range(self.nhmodels):
+            Calculator.__init__(self, **kwargs)
+            self.Calculators[self.nmodels+qbc_h] = Calculator
+            self.hmodels = hirshfeld_model
+            #self.model.to(device)
+            self.device = device
+            self.atoms_converter = AtomsConverter(
+                environment_provider=environment_provider[qbc],
+                collect_triples=collect_triples,
+                device=device,
+            )
+            print(qbc_h+self.nmodels)
+            self.model_hirshfeld = self.hirsh_volrat
+            # Convert to ASE internal units (energy=eV, length=A)
+        print(self.model_hirshfeld)
+ 
     def calculate(self, atoms=None, properties=["energy"], system_changes=all_changes):
         """
         Args:
@@ -308,8 +312,26 @@ class QueryCalculator(Calculator):
                         )
                     stress = model_results[self.model_stress].cpu().data.numpy()
                     self.query_results[self.stress] = stress.reshape((3, 3)) * self.stress_units
+                
+            for qbc_h in range(self.nhmodels):
+                if self.model_hirshfeld is not None:
+                    self.Calculators[self.nmodels + qbc_h].calculate(self, atoms)
+                    # Convert to schnetpack input format
+                    model_inputs = self.atoms_converter(atoms)
+                    # Call model
+                    self.model = self.hmodels[qbc_h].to(self.device)
+                    model_results = self.model(model_inputs)
+                    self.query_results["hirsh_volrat"] = np.zeros((self.nhmodels,len(atoms)))
+                    model_inputs = self.atoms_converter(atoms)
+                    hirshfeld_model_results = self.hirshfeld_model[qbc_h](model_inputs)
+                    if self.hirsh_volrat not in hirshfeld_model_results.keys():
+                        raise SpkVdwCalculatorError(
+                           "Your model does not support hirshfeld volume rations. Please check the model"
+                           )
+                    hirshfeld = hirshfeld_model_results[self.hirsh_volrat].cpu().data.numpy()
+                    self.query_results["hirsh_volrat"][qbc_h]=hirshfeld.reshape(-1)
 
-                self.query_results = self.query_results
+            self.query_results = self.query_results
         for prop in self.query_results:
             if prop == "forces": # in  self.query_results:
                 self.results[prop] = np.mean(self.query_results[prop],axis=0)
@@ -319,9 +341,13 @@ class QueryCalculator(Calculator):
                 fmax = np.max(np.abs(self.results["forces"]),axis=0)
                 self.results["fmax"] = np.max(fmax)
                 self.results["fmaxvar"] = np.var(fmax)
+            elif prop=="hirsh_volrat":
+                self.results["hirsh_volrat"] = np.mean(self.query_results["hirsh_volrat"],axis=0)
+                self.results["hirsh_volratmean"] = np.mean(self.query_results["hirsh_volrat"],axis=0)
+                self.results["hirsh_volratvar"] = np.var(self.query_results["hirsh_volrat"],axis=0)
             else:
                 self.results[prop] = np.mean(self.query_results[prop])
                 self.results[prop+"mean"] = np.mean(self.query_results[prop])
                 self.results[prop+"var"] = np.var(self.query_results[prop])
-            
+              
  
