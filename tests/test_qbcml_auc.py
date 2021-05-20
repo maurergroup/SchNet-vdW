@@ -74,7 +74,7 @@ if __name__ == '__main__':
 
     #do the same for the hirshfeld model
     for i in range(args.nhmodels):
-        hirshfeld_model[i] = torch.load(os.path.join(args.hirshfeld_modelpath+"Model%i/"%(i+1),"best_model"),map_location=device)
+        hirshfeld_model[i] = torch.load(os.path.join(args.hirshfeld_modelpath+"/Model%i/"%(i+1),"best_model"),map_location=device)
         hirshfeld_model_args[i] = spk.utils.read_from_json(os.path.join(args.hirshfeld_modelpath+"/Model%i/"%(i+1),"args.json"))
         if hirshfeld_model_args[i].parallel == True and device == "cpu": #and args.device == "gpu":
             hirshfeld_model[i] = hirshfeld_model[i].module
