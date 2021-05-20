@@ -43,6 +43,7 @@ def get_parser():
     parser.add_argument('--hirshfeld_modelpath', type=str,help = 'Destination for models and logs for hirshfeld volume rations',default=None)
     parser.add_argument('--overwrite', action='store_true', help='Overwrite old directories')
     parser.add_argument('--nmodels', help = "specify the number of ML models to use", default = 1, type = int)
+    parser.add_argument('--nhmodels', help = "specify the number of Hirshfeld models to use", default = 1, type = int)
 
     return parser
 
@@ -72,10 +73,11 @@ if __name__ == '__main__':
         environment_provider[i]=get_environment_provider(force_model_args[i],device=device)
 
     #do the same for the hirshfeld model
-    hirshfeld_model = torch.load(os.path.join(args.hirshfeld_modelpath,"best_model"),map_location=device)
-    hirshfeld_model_args = spk.utils.read_from_json(os.path.join(args.hirshfeld_modelpath,"args.json"))
-    if hirshfeld_model_args.parallel == True and device == "cpu": #and args.device == "gpu":
-        hirshfeld_model = hirshfeld_model.module
+    for i in range(args.nhmodels):
+        hirshfeld_model[i] = torch.load(os.path.join(args.hirshfeld_modelpath+"Model%i/"%(i+1),"best_model"),map_location=device)
+        hirshfeld_model_args[i] = spk.utils.read_from_json(os.path.join(args.hirshfeld_modelpath+"/Model%i/"%(i+1),"args.json"))
+        if hirshfeld_model_args[i].parallel == True and device == "cpu": #and args.device == "gpu":
+            hirshfeld_model[i] = hirshfeld_model[i].module
     
     #read atoms object
     atoms_init = ase.io.read(args.initialcondition)

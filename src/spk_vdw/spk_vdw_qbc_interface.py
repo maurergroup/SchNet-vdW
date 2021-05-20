@@ -81,12 +81,15 @@ class SpkVdwCalculator(SpkCalculator):
             energy_shift=None,
             fmax = 0.05,
             nmodels = int(1),
+            nhmodels = int(1),
             **kwargs
     ):
 
         #query_results = {}
         #initialise base class
         self.nmodels = nmodels
+        #number of hirshfeld models
+        self.nhmodels = nhmodels
         # idea is to initialize n calculators that all have a different model
         QueryCalculator.__init__(
                     self,
@@ -102,6 +105,7 @@ class SpkVdwCalculator(SpkCalculator):
                     stress_units=stress_units,
                     energy_shift=energy_shift,
                     nmodels=nmodels,
+                    nhmodels=nhmodels,
                     *kwargs)
       
 
@@ -112,7 +116,8 @@ class SpkVdwCalculator(SpkCalculator):
         self.energy_shift = energy_shift
         self.fmax = fmax
         if self.hirshfeld_model is not None:
-            self.hirshfeld_model = self.hirshfeld_model.to(device)
+            for qbc_h in range(self.nhmodels):
+                self.hirshfeld_model[qbc_h] = self.hirshfeld_model[qbc_h].to(device)
             self.hirsh_volrat=hirsh_volrat
             self.model_hirshfeld = hirsh_volrat
 
@@ -148,14 +153,20 @@ class SpkVdwCalculator(SpkCalculator):
 
         if self.calculation_required(atoms, properties):
             if self.model_hirshfeld is not None:
+                self.query_results["hirsh_volrat"] = np.zeros((self.nhmodels,len(atoms)))
                 model_inputs = self.atoms_converter(atoms)
-                hirshfeld_model_results = self.hirshfeld_model(model_inputs)
-                if self.hirsh_volrat not in hirshfeld_model_results.keys():
-                    raise SpkVdwCalculatorError(
-                       "Your model does not support hirshfeld volume rations. Please check the model"
-                       )
-                hirshfeld = hirshfeld_model_results[self.hirsh_volrat].cpu().data.numpy()
-                self.results["hirsh_volrat"]=hirshfeld.reshape(-1)
+                for qbc_h in range(self.nhmodels):
+                    hirshfeld_model_results = self.hirshfeld_model[qbc_h](model_inputs)
+                    if self.hirsh_volrat not in hirshfeld_model_results.keys():
+                        raise SpkVdwCalculatorError(
+                           "Your model does not support hirshfeld volume rations. Please check the model"
+                           )
+                    hirshfeld = hirshfeld_model_results[self.hirsh_volrat].cpu().data.numpy()
+                    self.query_results["hirsh_volrat"][qbc_h]=hirshfeld.reshape(-1)
+                self.results["hirsh_volrat"] = np.mean(self.query_results["hirsh_volrat"],axis=0)
+                self.results["hirsh_volratmean"] = np.mean(self.query_results["hirsh_volrat"],axis=0)
+                self.results["hirsh_volratvar"] = np.var(self.query_results["hirsh_volrat"],axis=0)
+         
         #save the different predictions in self.query_results
         # take the mean and std later
         #print((qbc,"step")
@@ -164,6 +175,9 @@ class SpkVdwCalculator(SpkCalculator):
         print("Fmax ", self.results["fmax"])
         print("Fmax mean", self.results["fmaxmean"])
         print("Forcesmax var", self.results["fmaxvar"])
+        if "hirsh_volrat" in self.results:
+            print("Hirsh mean", self.results["hirsh_volratmean"])
+            print("Hirsh var", self.results["hirsh_volratvar"])
         if "energystd" in self.results:
             # JW we want 0.05 and can add the error of the models as "noise" ? forces are tricky as I don't know which indices due to constraints. 
             # for instance, some atoms are always fixed and there are super large forces 
