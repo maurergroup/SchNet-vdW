@@ -71,11 +71,11 @@ if __name__ == '__main__':
         #environment provider for ML, 
         environment_provider[i]=get_environment_provider(force_model_args[i],device=device)
 
-        #do the same for the hirshfeld model
-        hirshfeld_model[i] = torch.load(os.path.join(args.hirshfeld_modelpath,"best_model"),map_location=device)
-        hirshfeld_model_args[i] = spk.utils.read_from_json(os.path.join(args.hirshfeld_modelpath,"args.json"))
-        if hirshfeld_model_args[i].parallel == True and device == "cpu": #and args.device == "gpu":
-            hirshfeld_model[i] = hirshfeld_model[i].module
+    #do the same for the hirshfeld model
+    hirshfeld_model = torch.load(os.path.join(args.hirshfeld_modelpath,"best_model"),map_location=device)
+    hirshfeld_model_args = spk.utils.read_from_json(os.path.join(args.hirshfeld_modelpath,"args.json"))
+    if hirshfeld_model_args.parallel == True and device == "cpu": #and args.device == "gpu":
+        hirshfeld_model = hirshfeld_model.module
     
     #read atoms object
     atoms_init = ase.io.read(args.initialcondition)
