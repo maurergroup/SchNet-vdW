@@ -321,20 +321,20 @@ class QueryCalculator(Calculator):
                     # Call model
                     self.model = self.hmodels[qbc_h].to(self.device)
                     model_results = self.model(model_inputs)
-                    self.query_results["hirsh_volrat"] = np.zeros((self.nhmodels,len(atoms)))
-                    model_inputs = self.atoms_converter(atoms)
-                    hirshfeld_model_results = self.hirshfeld_model[qbc_h](model_inputs)
-                    if self.hirsh_volrat not in hirshfeld_model_results.keys():
+                    if "hirsh_volrat" not in self.query_results:
+                        self.query_results["hirsh_volrat"] = np.zeros((self.nhmodels,len(atoms)))
+                    if self.hirsh_volrat not in model_results.keys():
                         raise SpkVdwCalculatorError(
                            "Your model does not support hirshfeld volume rations. Please check the model"
                            )
-                    hirshfeld = hirshfeld_model_results[self.hirsh_volrat].cpu().data.numpy()
+                    hirshfeld = model_results[self.hirsh_volrat].cpu().data.numpy()
                     self.query_results["hirsh_volrat"][qbc_h]=hirshfeld.reshape(-1)
 
             self.query_results = self.query_results
         for prop in self.query_results:
             if prop == "forces": # in  self.query_results:
-                self.results[prop] = np.mean(self.query_results[prop],axis=0)
+                # test to take only one model nr. 1
+                self.results[prop] = np.mean(self.query_results[prop],axis=0) #= self.query_results[prop][0] #
                 self.results[prop+"mean"] = np.mean(self.query_results[prop],axis=0)
                 self.results[prop+"var"] = np.var(self.query_results[prop],axis=0)
                 self.results["fmaxmean"] = np.max(np.abs(self.results["forcesmean"]))
