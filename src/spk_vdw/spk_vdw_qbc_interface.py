@@ -180,7 +180,7 @@ class SpkVdwCalculator(SpkCalculator):
             self.nsteps = 0
             print("Please save the output in a file named 'opt.log' (python ..py >> opt.log) for using the QBC models and early stopping.")
         if self.extrapolate == False:
-            if self.current_fmax < 0.1 or self.reached_fmax == True:
+            if self.current_fmax < 0.075 or self.reached_fmax == True:
                 self.reached_fmax = True
                 if self.results['energyvar'] > self.last_evar:
                     self.nsteps+=1
