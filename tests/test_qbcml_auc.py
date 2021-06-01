@@ -42,6 +42,7 @@ def get_parser():
     parser.add_argument('modelpath', help='Destination for models and logs')
     parser.add_argument('--hirshfeld_modelpath', type=str,help = 'Destination for models and logs for hirshfeld volume rations',default=None)
     parser.add_argument('--overwrite', action='store_true', help='Overwrite old directories')
+    parser.add_argument('--extrapolate', action='store_true', help='Extrapolative system not included in the training set (size, molecular system).')
     parser.add_argument('--nmodels', help = "specify the number of ML models to use", default = 1, type = int)
     parser.add_argument('--nhmodels', help = "specify the number of Hirshfeld models to use", default = 1, type = int)
 
@@ -91,18 +92,6 @@ if __name__ == '__main__':
 
     else:
         stress = None
-    """qm_calcs={}
-    for i in range(args.nmodels):
-        qm_calcs[i] = spk_vdw_qbc_interface.SpkVdwCalculator(force_model[i],
-                                                 hirshfeld_model = hirshfeld_model[i],
-                                                 device = device,
-                                                 energy = spk.Properties.energy,
-                                                 forces = spk.Properties.forces,
-                                                 hirsh_volrat = "hirshfeld_volumes",
-                                                 energy_units = 'eV', forces_units='eV/A',
-                                                 environment_provider = environment_provider[i],
-                                                 fmax=args.fmax,
-                                                 )"""
     qm_calc = spk_vdw_qbc_interface.SpkVdwCalculator(force_model,
                                                  hirshfeld_model = hirshfeld_model,
                                                  device = device,
@@ -113,7 +102,8 @@ if __name__ == '__main__':
                                                  environment_provider = environment_provider,
                                                  fmax=args.fmax,
                                                  nmodels = args.nmodels,
-                                                 nhmodels = args.nhmodels)
+                                                 nhmodels = args.nhmodels,
+                                                 extrapolate = args.extrapolate)
  
     vdw_calc = MBD(
         scheme=args.vdw, #VDW or MBD

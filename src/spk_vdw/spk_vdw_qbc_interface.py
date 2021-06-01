@@ -82,6 +82,7 @@ class SpkVdwCalculator(SpkCalculator):
             fmax = 0.05,
             nmodels = int(1),
             nhmodels = int(1),
+            extrapolate = False,
             **kwargs
     ):
 
@@ -107,6 +108,7 @@ class SpkVdwCalculator(SpkCalculator):
                     energy_shift=energy_shift,
                     nmodels=nmodels,
                     nhmodels=nhmodels,
+                    extrapolate=extrapolate,
                     *kwargs)
       
         #do additional things that are not already done by base init
@@ -122,23 +124,31 @@ class SpkVdwCalculator(SpkCalculator):
             self.model_hirshfeld = hirsh_volrat
 
                   
-            
-        #adapt the fmax value
-        #this is the default
-        self.adaptive_fmax = self.fmax
+        # define if system is known to the model    
+        # false if structure is included in the training set; false is default
+        self.extrapolate = extrapolate
+        self.current_fmax = np.inf
+        self.reached_fmax = False
+        self.last_evar = np.inf 
+        self.nsteps = int(0)
+        self.end = False
         def get_hirsh_volrat(self): 
             if ('output' in self.parameters and
             'hirsh_volrat' not in self.parameters['output']):
                  raise NotImplementedError
             return Calculator.get_property(self, 'hirsh_volrat', self.atoms)
-        def get_adaptive_fmax(self): 
-            # I cannot ask for this, spk does not have any property etc.
-            # but we can always return it as a factor to multiply fmax   
-            return self.adaptive_fmax
-    
+
+        """def get_end_of_optimization(self, current_fmax):  
+            init_=(0,np.inf)
+            print(init_)
+            self.current_fmax = current_fmax
+            np.savez("qbc_evar.npz",init_)
+            print(self.current_fmax)
+            return Calculator.get_propy(self, 'end', self.current_fmax)"""
+                                           
     def calculate(self, atoms=None, properties=["energy"], system_changes=all_changes):
-        """
-        Args:
+        """                                
+        Args:                              
             atoms (ase.Atoms): ASE atoms object.
             properties (list of str): do not use this, no functionality
             system_changes (list of str): List of changes for ASE.
@@ -150,12 +160,54 @@ class SpkVdwCalculator(SpkCalculator):
             properties, 
             system_changes
         )
-
         
-        #save the different predictions in self.query_results
-        # take the mean and std later
-        #print((qbc,"step")
-        print("Energy mean ",self.results["energymean"])
+        # save the previous step
+        
+        try:
+            file = open("opt.log","r").readlines()    
+            if len(file) >= 3:
+                self.current_fmax = float(file[len(file)-1].split()[4])
+                if self.reached_fmax == True:
+                    self.last_evar = float(file[len(file)-2].split()[2])
+                    self.nsteps = int(file[len(file)-2].split()[1])
+            else:
+                self.current_fmax = np.inf 
+                self.last_evar = np.inf
+                self.nsteps = 0
+        except IOError:
+            self.current_fmax = np.inf 
+            self.last_evar = np.inf
+            self.nsteps = 0
+            print("Please save the output in a file named 'opt.log' (python ..py >> opt.log) for using the QBC models and early stopping.")
+        if self.extrapolate == False:
+            if self.current_fmax < 0.1 or self.reached_fmax == True:
+                self.reached_fmax = True
+                if self.results['energyvar'] > self.last_evar:
+                    self.nsteps+=1
+                    
+                    print("Evar: %i %12.11f" %(self.nsteps, self.results['energyvar']))
+                else:
+                    self.nsteps = 0
+                    print("Evar: %i %12.11f" %(self.nsteps, self.results['energyvar']))
+                if self.nsteps > int(2):
+                    self.end = True
+                else:
+                    self.end = False
+        else:
+            if self.current_fmax < 0.15 or self.reached_fmax == True:
+                self.end = True
+                self.reached_fmax = True
+                if self.results['energyvar']> self.last_evar:
+                    self.end = True
+                else: 
+                    self.end = False 
+                    print("Evar: 0 %f" %(self.results['energyvar']))
+ 
+        if self.end == True:
+            import os
+            os.system("echo 'Terminated optimization early.' >> Stopped") 
+            exit()
+        """print("Energy mean ",self.results["energymean"])
         print("Energy var ", self.results["energyvar"])
         print("Fmax ", self.results["fmax"])
         print("Fmax mean", self.results["fmaxmean"])
@@ -166,7 +218,7 @@ class SpkVdwCalculator(SpkCalculator):
             # JW we want 0.05 and can add the error of the models as "noise" ? forces are tricky as I don't know which indices due to constraints. 
             # for instance, some atoms are always fixed and there are super large forces 
             # the stds are in the range of 0.001-0.005, which fits quite well in an interpolative regime
-            self.adaptive_fmax = self.adaptive_fmax + self.results["energystd"]
+            self.adaptive_fmax = self.adaptive_fmax + self.results["energystd"]"""
 
 class QueryCalculator(Calculator):
     """
@@ -241,10 +293,8 @@ class QueryCalculator(Calculator):
                 collect_triples=collect_triples,
                 device=device,
             )
-            print(qbc_h+self.nmodels)
             self.model_hirshfeld = self.hirsh_volrat
             # Convert to ASE internal units (energy=eV, length=A)
-        print(self.model_hirshfeld)
  
     def calculate(self, atoms=None, properties=["energy"], system_changes=all_changes):
         """
