@@ -162,14 +162,23 @@ class SpkVdwCalculator(SpkCalculator):
         )
         
         # save the previous step
-        
         try:
             file = open("opt.log","r").readlines()    
             if len(file) >= 3:
-                self.current_fmax = float(file[len(file)-1].split()[4])
-                if self.reached_fmax == True:
-                    self.last_evar = float(file[len(file)-2].split()[2])
-                    self.nsteps = int(file[len(file)-2].split()[1])
+                if file[len(file)-1].startswith("BasinHopping"):
+                    self.current_fmax = np.inf 
+                    self.last_evar = np.inf
+                    self.nsteps = 0
+                    bhstep = file[len(file)-1].split()[2]
+                    os.system("mv Stopped Stopped_%s"%bhstep[:len(bhstep)-1])
+                    #next bh step starts, set fmax reached to False
+                    self.reached_fmax=False 
+                    self.end = False
+                else:
+                    self.current_fmax = float(file[len(file)-1].split()[4])
+                    if self.reached_fmax == True:
+                        self.last_evar = float(file[len(file)-2].split()[2])
+                        self.nsteps = int(file[len(file)-2].split()[1])
             else:
                 self.current_fmax = np.inf 
                 self.last_evar = np.inf
@@ -204,9 +213,9 @@ class SpkVdwCalculator(SpkCalculator):
                     print("Evar: 0 %f" %(self.results['energyvar']))
  
         if self.end == True:
-            import os
             os.system("echo 'Terminated optimization early.' >> Stopped") 
-            exit()
+            self.results["forces"]=self.results["forces"]*0.0 #exit()
+            self.results["forces"]=np.ma.masked_equal(self.results["forces"],0.0)
         """print("Energy mean ",self.results["energymean"])
         print("Energy var ", self.results["energyvar"])
         print("Fmax ", self.results["fmax"])

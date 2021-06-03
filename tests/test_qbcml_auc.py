@@ -37,6 +37,8 @@ def get_parser():
     parser.add_argument('--ts',help='Define the type of vdw correction. Options: TS, TSsurf', default = 'TS', type = str)
     parser.add_argument('--fmax',help='Temperature for Basin Hopping algorithm', default = 0.05, type = float)
     parser.add_argument('--temp',help='Temperature for Basin Hopping algorithm', default = 300, type = int)
+    parser.add_argument('--mode',help='Define the type of calculations. Options: optimization (key: opt), basin hopping (key: bh)', default = 'opt', type = str)
+    parser.add_argument('--dr', help = "Maximal stepwidth in basin hopping.", default = 0.5, type = float)
     parser.add_argument('initialcondition', help='Input file')
     parser.add_argument('path', help='Path for the simulation')
     parser.add_argument('modelpath', help='Destination for models and logs')
@@ -45,7 +47,7 @@ def get_parser():
     parser.add_argument('--extrapolate', action='store_true', help='Extrapolative system not included in the training set (size, molecular system).')
     parser.add_argument('--nmodels', help = "specify the number of ML models to use", default = 1, type = int)
     parser.add_argument('--nhmodels', help = "specify the number of Hirshfeld models to use", default = 1, type = int)
-
+    parser.add_argument('--bhsteps', help = "Number of basin hopping steps", default = 100, type = int)
     return parser
 
 if __name__ == '__main__':
@@ -120,5 +122,16 @@ if __name__ == '__main__':
     atoms_init.set_calculator(dispcorr)
     c=ase.constraints.FixAtoms(indices=[atom.index for atom in atoms_init if atom.symbol == 'C'] )
     atoms_init.set_constraint(c) #ase.constraints.FixAtoms(np.arange(686)))
-    opt = BFGS(atoms_init,trajectory='opt.traj')
-    opt.run(fmax=args.fmax)
+    if args.mode == "opt":
+        opt = BFGS(atoms_init,trajectory='opt.traj')
+        opt.run(fmax=args.fmax)
+    elif args.mode == "bh":
+        bh = BasinHopping( atoms=atoms_init,
+             temperature = args.temp * kB, # Temperature to overcome barriers
+             dr = args.dr, # maximal stepwidth
+             optimizer = BFGS, #optimizer to find local minima
+             fmax = args.fmax #maximal force for the optimizer
+             )
+        bh.run(args.bhsteps)
+    else:
+        print("Mode not implemented.") 
