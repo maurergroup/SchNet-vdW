@@ -83,6 +83,8 @@ class SpkVdwCalculator(SpkCalculator):
             nmodels = int(1),
             nhmodels = int(1),
             extrapolate = False,
+            adaptive_fmax = 0.075,
+            logfile = 'opt.log',
             **kwargs
     ):
 
@@ -109,6 +111,8 @@ class SpkVdwCalculator(SpkCalculator):
                     nmodels=nmodels,
                     nhmodels=nhmodels,
                     extrapolate=extrapolate,
+                    adaptive_fmax = adaptive_fmax,
+                    logfile = logfile,
                     *kwargs)
       
         #do additional things that are not already done by base init
@@ -117,6 +121,7 @@ class SpkVdwCalculator(SpkCalculator):
         self.models = model
         self.energy_shift = energy_shift
         self.fmax = fmax
+        self.logfile = logfile
         if self.hirshfeld_model is not None:
             for qbc_h in range(self.nhmodels):
                 self.hirshfeld_model[qbc_h] = self.hirshfeld_model[qbc_h].to(device)
@@ -132,6 +137,8 @@ class SpkVdwCalculator(SpkCalculator):
         self.last_evar = np.inf 
         self.nsteps = int(0)
         self.end = False
+        self.adaptive_fmax = adaptive_fmax
+        
         def get_hirsh_volrat(self): 
             if ('output' in self.parameters and
             'hirsh_volrat' not in self.parameters['output']):
@@ -163,33 +170,42 @@ class SpkVdwCalculator(SpkCalculator):
         
         # save the previous step
         try:
-            file = open("opt.log","r").readlines()    
+            file = open(self.logfile,"r").readlines()    
             if len(file) >= 3:
                 if file[len(file)-1].startswith("BasinHopping"):
                     self.current_fmax = np.inf 
                     self.last_evar = np.inf
+                    self.last_fmax = np.inf
                     self.nsteps = 0
+                    self.nsteps_fmax = 0
                     bhstep = file[len(file)-1].split()[2]
                     os.system("mv Stopped Stopped_%s"%bhstep[:len(bhstep)-1])
                     #next bh step starts, set fmax reached to False
                     self.reached_fmax=False 
                     self.end = False
                 else:
+                    if self.current_fmax:
+                        self.previous_fmax = self.current_fmax #float(file[len(file)-1].split()[
+                    else:
+                        self.previous_fmax = np.inf
                     self.current_fmax = float(file[len(file)-1].split()[4])
                     if self.reached_fmax == True:
                         self.last_evar = float(file[len(file)-2].split()[2])
                         self.nsteps = int(file[len(file)-2].split()[1])
             else:
                 self.current_fmax = np.inf 
+                self.previous_fmax = np.inf
                 self.last_evar = np.inf
                 self.nsteps = 0
+                self.nsteps_fmax = 0
         except IOError:
             self.current_fmax = np.inf 
             self.last_evar = np.inf
             self.nsteps = 0
-            print("Please save the output in a file named 'opt.log' (python ..py >> opt.log) for using the QBC models and early stopping.")
+            self.nsteps_fmax = 0
+            print("Please save the output in a file named %s (python ..py >> %s) for using the QBC models and early stopping."%(self.logfile,self.logfile))
         if self.extrapolate == False:
-            if self.current_fmax < 0.075 or self.reached_fmax == True:
+            if self.current_fmax < self.adaptive_fmax or self.reached_fmax == True:
                 self.reached_fmax = True
                 if self.results['energyvar'] > self.last_evar:
                     self.nsteps+=1
@@ -202,15 +218,31 @@ class SpkVdwCalculator(SpkCalculator):
                     self.end = True
                 else:
                     self.end = False
+            else:
+                if self.current_fmax > self.previous_fmax:
+                    self.nsteps_fmax += 1
+                else:
+                    self.nsteps_fmax = 0
+                if self.nsteps_fmax >= int(2):
+                    self.end = True
+                else: 
+                    self.end = False
         else:
-            if self.current_fmax < 0.15 or self.reached_fmax == True:
+            if self.current_fmax < 2*self.adaptive_fmax or self.reached_fmax == True:
                 self.end = True
                 self.reached_fmax = True
                 if self.results['energyvar']> self.last_evar:
                     self.end = True
+                    print("Evar: 1 %f" %(self.results['energyvar']))
                 else: 
-                    self.end = False 
-                    print("Evar: 0 %f" %(self.results['energyvar']))
+                    if self.current_fmax > self.previous_fmax:
+                        self.nsteps_fmax += 1
+                    else:
+                        self.nsteps_fmax = 0
+                    if self.nsteps_fmax >= int(2):
+                        self.end = True
+                    else: 
+                        self.end = False
  
         if self.end == True:
             os.system("echo 'Terminated optimization early.' >> Stopped") 
