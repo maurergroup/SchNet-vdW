@@ -19,10 +19,10 @@ The following installation is recommended:
     e. conda install gxx_linux-64
     f. pip install pymbd
 5. Install SchNetPack including all requirements (for the correct pytorch cuda combination, check: https://pytorch.org/get-started/locally/). A suggested installation procedure could be:
-    a. conda install ase numpy six scipy matplotlib  h5py tqdm pytest pytest-datadir
-    b. conda install pytorch torchvision torchaudio cudatoolkit=XX.X -c pytorch
-    c. see https://github.com/atomistic-machine-learning/schnetpack for installation of SPK
-6. Install this github repository: execute "pip install ." in this directory
+    a. Clone SchNetPack (see https://github.com/atomistic-machine-learning/schnetpack) 
+    b. Go into the schnetpack folder and install it via "pip install ."
+Noe that installation does not work via conda and will report conflicts.
+6. Install this (https://github.com/maurergroup/SchNet-vdW/) github repository: execute "pip install ." in this directory
 
 
 Once done, don't forget to set your LD_LIBRARY_PATH.
