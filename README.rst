@@ -12,11 +12,12 @@ The following installation is recommended:
 2. create a new environmet: conda create -n ml python
 3. The environment is named "ml", activate it via: conda activate ml
 4. To install libmbd, execute the following:
-    a. pip install --upgrade pip setuptools wheel
-    b. conda install -c conda-forge libmbd
-    c. conda install gcc_linux-64
-    d. conda install gxx_linux-64
-    e. pip install pymbd
+    a. conda install pip
+    b. pip install --upgrade pip setuptools wheel
+    c. conda install -c conda-forge libmbd
+    d. conda install gcc_linux-64
+    e. conda install gxx_linux-64
+    f. pip install pymbd
 5. Install SchNetPack including all requirements (for the correct pytorch cuda combination, check: https://pytorch.org/get-started/locally/). A suggested installation procedure could be:
     a. conda install ase numpy six scipy matplotlib  h5py tqdm pytest pytest-datadir
     b. conda install pytorch torchvision torchaudio cudatoolkit=XX.X -c pytorch
