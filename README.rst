@@ -15,8 +15,7 @@ The following installation procedure is recommended:
     b. pip install --upgrade pip setuptools wheel
     c. conda install -c conda-forge libmbd
     d. conda install gcc_linux-64
-    e. conda install gxx_linux-64
-    f. pip install pymbd
+    e. pip install pymbd
 5. Install SchNetPack including all requirements (for the correct PyTorch CUDA combination, see: https://pytorch.org/get-started/locally/). A suggested installation procedure is:
     a. Clone SchNetPack (https://github.com/atomistic-machine-learning/schnetpack) 
     b. Go into the SchNetPack folder and install it via "pip install ."
