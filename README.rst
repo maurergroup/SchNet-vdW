@@ -7,20 +7,19 @@ Requirements:
 
 The following installation procedure is recommended when using anaconda. See below for an installation on HPE Cray Supercomputers:
 
-1. Download Anaconda (https://docs.anaconda.com/)
-2. Create a new environment: ``conda create -n ml python``
-3. The environment is named "ml", activate it via: conda activate ml
-4. To install Libmbd, execute the following:
-    a. ``conda install pip``
-    b. ``pip install --upgrade pip setuptools wheel``
-    c. ``conda install -c conda-forge libmbd``
-    d. ``conda install gcc_linux-64``
+1. Download Anaconda (https://docs.anaconda.com/) and install it.
+2. Make sure you can create environments: ``conda config --append channels conda-forge``
+4. To install Libmbd, several packages have to be installed before, otherwise an error might be reported. For us, the following procedure worked:
+    a.  ``conda create -n vdw python h5py tensorboardX pytorch ase numpy six protobuf scipy matplotlib python-dateutil pyyaml tqdm pyparsing kiwisolver cycler netcdf4 hdf5 h5utils jupyter -c openbabel``
+    b. The environment is named "vdw", activate it via: ``conda activate vdw``
+    c. ``conda install pip``
+    d. ``conda install -c conda-forge libmbd``
     e. ``pip install pymbd``
 5. Install SchNetPack including all requirements (for the correct PyTorch CUDA combination, see: https://pytorch.org/get-started/locally/). A suggested installation procedure is:
-    a. Clone SchNetPack (https://github.com/atomistic-machine-learning/schnetpack) 
-    b. Go into the SchNetPack folder and install it via ``pip install .``
+    a. Clone SchNetPack (https://github.com/juliawestermayr/schnetpack.git or https://github.com/atomistic-machine-learning/schnetpack) 
+    b. Go into the SchNetPack folder and install it via ``python setup.py install``
 Note that installation does not work via Conda and will report conflicts.
-6. Install this (https://github.com/maurergroup/SchNet-vdW/) github repository: execute ``pip install .`` in this directory
+6. Install this (https://github.com/maurergroup/SchNet-vdW/) github repository: execute ``python setup.py install `` in this directory
 
 Once done, don't forget to set your LD_LIBRARY_PATH.
 
