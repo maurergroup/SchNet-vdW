@@ -10,8 +10,8 @@
 #X2O
 
 #Get Hessian file
-# Note that python2 is needed, a Hessian input as an example is provided
-#python2.7 ../src/scripts/Lindh.py B2O.in --full OptX2O/HessianB2O.dat
+#The Hessian input was created by Jürgen Wieferink and is available via the FHI-aims package (Lindh.py in utilities, python2). 
+#A few other versions of the lindh script (including python3 version) is available via the package: https://github.com/sabia-group/gensec DOI 10.5281/zenodo.5651513. 
 
 #run optimization
 python test_ml.py B2O.in OptX2O MLModels/X2O/EF --hirshfeld_modelpath MLModels/X2O/Hirshfeld/ --vdw vdw --ts TSSurf --Hessianfile OptX2O/HessianB2O.dat --kgrid 7 7 1 > OptX2O/opt.log
