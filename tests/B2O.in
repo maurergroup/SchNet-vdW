@@ -1,107 +1,97 @@
-lattice_vector     8.52590472     0.00000006     0.00000000
-lattice_vector     7.10492066     7.38365006     0.00000000
+lattice_vector     5.68393644     -4.92243330     0.00000000
+lattice_vector     5.68393652     4.92243338     0.00000000
 lattice_vector     0.00000000     0.00000000     80.00000000
-atom     0.48502524     -0.54098829       20.68887550 C 
-atom     -0.22176687     0.66183193       20.68822981 C 
-atom     -0.17632153     -1.82670471       20.68384513 C
-atom     0.47965545     -2.92860648       20.51297088 O 
-atom     -1.61061567     -1.77382165       20.84302055 C
-atom     -2.31809840     -0.56943844       20.84425184 C
-atom     -1.66688214     0.70952260       20.68367341 C 
-atom     -2.31053985     1.81845152       20.51200324 O 
-atom     0.30647923     1.61590995       20.74193345 H  
-atom     1.57558792     -0.54367690       20.74211067 H 
-atom     -2.13640590     -2.71923633       20.98970850 H
-atom     -3.40023062     -0.56911230       20.98840367 H
-atom     0.00000000     0.00000000     2.32045730 Ag
+atom     0.69580214     0.17040754     18.70377270 C
+atom     -0.69955003     0.17301832     18.70396777 C
+atom     1.46508826     -1.05287927     18.69302494 C
+atom     2.74672312     -1.05085458     18.51148962 O
+atom     0.69167727     -2.26116971     18.85354746 C
+atom     -0.70460075     -2.25860438     18.85346961 C
+atom     -1.47344819     -1.04736783     18.69331980 C
+atom     -2.75509786     -1.04056912     18.51219340 O
+atom     -1.25322581     1.11265592     18.75759884 H
+atom     1.25308493     1.10791848     18.75735653 H
+atom     1.23944308     -3.19506578     18.99367976 H
+atom     -1.25587901     -3.19032436     18.99427113 H
+atom     0.00000000     0.00000000     2.32045730 Pd
 constrain_relaxation .true.
-atom     2.84196824     0.00000002     2.32045730 Ag
+atom     2.84196824     0.00000002     2.32045730 Pd
 constrain_relaxation .true.
-atom     4.26295238     2.46121670     2.32045730 Ag
+atom     4.26295238     2.46121670     2.32045730 Pd
 constrain_relaxation .true.
-atom     5.68393652     4.92243338     2.32045730 Ag
+atom     4.26295234     -2.46121664     2.32045730 Pd
 constrain_relaxation .true.
-atom     5.68393648     0.00000004     2.32045730 Ag
+atom     5.68393648     0.00000004     2.32045730 Pd
 constrain_relaxation .true.
-atom     7.10492062     2.46121672     2.32045730 Ag
+atom     7.10492062     2.46121672     2.32045730 Pd
 constrain_relaxation .true.
-atom     8.52590476     4.92243340     2.32045730 Ag
+atom     7.10492058     -2.46121662     2.32045730 Pd
 constrain_relaxation .true.
-atom     9.94688886     2.46121674     2.32045730 Ag
+atom     8.52590472     0.00000006     2.32045730 Pd
 constrain_relaxation .true.
-atom     11.36787300     4.92243342     2.32045730 Ag
+atom     1.42098418     0.82040560     0.00000000 Pd
 constrain_relaxation .true.
-atom     1.42098418     0.82040560     0.00000000 Ag
+atom     4.26295242     0.82040562     0.00000000 Pd
 constrain_relaxation .true.
-atom     4.26295242     0.82040562     0.00000000 Ag
+atom     5.68393656     3.28162230     0.00000000 Pd
 constrain_relaxation .true.
-atom     5.68393656     3.28162230     0.00000000 Ag
+atom     5.68393652     -1.64081104     0.00000000 Pd
 constrain_relaxation .true.
-atom     7.10492070     5.74283898     0.00000000 Ag
+atom     7.10492066     0.82040564     0.00000000 Pd
 constrain_relaxation .true.
-atom     7.10492066     0.82040564     0.00000000 Ag
+atom     8.52590480     3.28162232     0.00000000 Pd
 constrain_relaxation .true.
-atom     8.52590480     3.28162232     0.00000000 Ag
+atom     8.52590476     -1.64081102     0.00000000 Pd
 constrain_relaxation .true.
-atom     9.94688894     5.74283900     0.00000000 Ag
+atom     9.94688890     0.82040566     0.00000000 Pd
 constrain_relaxation .true.
-atom     11.36787304     3.28162234     0.00000000 Ag
+atom     2.84196819     1.64081110     4.64091460 Pd
 constrain_relaxation .true.
-atom     12.78885718     5.74283902     0.00000000 Ag
+atom     5.68393643     1.64081112     4.64091460 Pd
 constrain_relaxation .true.
-atom     2.84196819     1.64081110     4.64091460 Ag
+atom     7.10492057     4.10202780     4.64091460 Pd
 constrain_relaxation .true.
-atom     5.68393643     1.64081112     4.64091460 Ag
+atom     7.10492053     -0.82040554     4.64091460 Pd
 constrain_relaxation .true.
-atom     7.10492057     4.10202780     4.64091460 Ag
+atom     8.52590467     1.64081114     4.64091460 Pd
 constrain_relaxation .true.
-atom     8.52590471     6.56324448     4.64091460 Ag
+atom     9.94688881     4.10202782     4.64091460 Pd
 constrain_relaxation .true.
-atom     8.52590467     1.64081114     4.64091460 Ag
+atom     9.94688877     -0.82040552     4.64091460 Pd
 constrain_relaxation .true.
-atom     9.94688881     4.10202782     4.64091460 Ag
+atom     11.36787291     1.64081116     4.64091460 Pd
 constrain_relaxation .true.
-atom     11.36787295     6.56324450     4.64091460 Ag
+atom     1.42098418     0.82040560     6.96137200 Pd
 constrain_relaxation .true.
-atom     12.78885705     4.10202784     4.64091460 Ag
+atom     4.26295242     0.82040562     6.96137200 Pd
 constrain_relaxation .true.
-atom     14.20984119     6.56324452     4.64091460 Ag
+atom     5.68393656     3.28162230     6.96137200 Pd
 constrain_relaxation .true.
-atom     1.42098418     0.82040560     6.96137200 Ag
+atom     5.68393652     -1.64081104     6.96137200 Pd
 constrain_relaxation .true.
-atom     4.26295242     0.82040562     6.96137200 Ag
+atom     7.10492066     0.82040564     6.96137200 Pd
 constrain_relaxation .true.
-atom     5.68393656     3.28162230     6.96137200 Ag
+atom     8.52590480     3.28162232     6.96137200 Pd
 constrain_relaxation .true.
-atom     7.10492070     5.74283898     6.96137200 Ag
+atom     8.52590476     -1.64081102     6.96137200 Pd
 constrain_relaxation .true.
-atom     7.10492066     0.82040564     6.96137200 Ag
+atom     9.94688890     0.82040566     6.96137200 Pd
 constrain_relaxation .true.
-atom     8.52590480     3.28162232     6.96137200 Ag
+atom     0.00000000     0.00000000     9.28182930 Pd
 constrain_relaxation .true.
-atom     9.94688894     5.74283900     6.96137200 Ag
+atom     2.84196824     0.00000002     9.28182930 Pd
 constrain_relaxation .true.
-atom     11.36787304     3.28162234     6.96137200 Ag
+atom     4.26295238     2.46121670     9.28182930 Pd
 constrain_relaxation .true.
-atom     12.78885718     5.74283902     6.96137200 Ag
+atom     4.26295234     -2.46121664     9.28182930 Pd
 constrain_relaxation .true.
-atom     0.00000000     0.00000000     9.28182930 Ag
+atom     5.68393648     0.00000004     9.28182930 Pd
 constrain_relaxation .true.
-atom     2.84196824     0.00000002     9.28182930 Ag
+atom     7.10492062     2.46121672     9.28182930 Pd
 constrain_relaxation .true.
-atom     4.26295238     2.46121670     9.28182930 Ag
+atom     7.10492058     -2.46121662     9.28182930 Pd
 constrain_relaxation .true.
-atom     5.68393652     4.92243338     9.28182930 Ag
-constrain_relaxation .true.
-atom     5.68393648     0.00000004     9.28182930 Ag
-constrain_relaxation .true.
-atom     7.10492062     2.46121672     9.28182930 Ag
-constrain_relaxation .true.
-atom     8.52590476     4.92243340     9.28182930 Ag
-constrain_relaxation .true.
-atom     9.94688886     2.46121674     9.28182930 Ag
-constrain_relaxation .true.
-atom     11.36787300     4.92243342     9.28182930 Ag
+atom     8.52590472     0.00000006     9.28182930 Pd
 constrain_relaxation .true.
 atom     2.84196819     1.64081110     11.60228660 Ag
 constrain_relaxation .true.
@@ -109,33 +99,29 @@ atom     5.68393643     1.64081112     11.60228660 Ag
 constrain_relaxation .true.
 atom     7.10492057     4.10202780     11.60228660 Ag
 constrain_relaxation .true.
-atom     8.52590471     6.56324448     11.60228660 Ag
+atom     7.10492053     -0.82040554     11.60228660 Ag
 constrain_relaxation .true.
 atom     8.52590467     1.64081114     11.60228660 Ag
 constrain_relaxation .true.
 atom     9.94688881     4.10202782     11.60228660 Ag
 constrain_relaxation .true.
-atom     11.36787295     6.56324450     11.60228660 Ag
+atom     9.94688877     -0.82040552     11.60228660 Ag
 constrain_relaxation .true.
-atom     12.78885705     4.10202784     11.60228660 Ag
-constrain_relaxation .true.
-atom     14.20984119     6.56324452     11.60228660 Ag
+atom     11.36787291     1.64081116     11.60228660 Ag
 constrain_relaxation .true.
 atom     1.42098418     0.82040560     13.92274400 Ag
 atom     4.26295242     0.82040562     13.92274400 Ag
 atom     5.68393656     3.28162230     13.92274400 Ag
-atom     7.10492070     5.74283898     13.92274400 Ag
+atom     5.68393652     -1.64081104     13.92274400 Ag
 atom     7.10492066     0.82040564     13.92274400 Ag
 atom     8.52590480     3.28162232     13.92274400 Ag
-atom     9.94688894     5.74283900     13.92274400 Ag
-atom     11.36787304     3.28162234     13.92274400 Ag
-atom     12.78885718     5.74283902     13.92274400 Ag
+atom     8.52590476     -1.64081102     13.92274400 Ag
+atom     9.94688890     0.82040566     13.92274400 Ag
 atom     0.00000000     0.00000000     16.24320130 Ag
 atom     2.84196824     0.00000002     16.24320130 Ag
 atom     4.26295238     2.46121670     16.24320130 Ag
-atom     5.68393652     4.92243338     16.24320130 Ag
+atom     4.26295234     -2.46121664     16.24320130 Ag
 atom     5.68393648     0.00000004     16.24320130 Ag
 atom     7.10492062     2.46121672     16.24320130 Ag
-atom     8.52590476     4.92243340     16.24320130 Ag
-atom     9.94688886     2.46121674     16.24320130 Ag
-atom     11.36787300     4.92243342     16.24320130 Ag
+atom     7.10492058     -2.46121662     16.24320130 Ag
+atom     8.52590472     0.00000006     16.24320130 Ag

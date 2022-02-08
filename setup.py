@@ -21,7 +21,6 @@ setup(
         "torch>=0.4.1",
         "numpy",
         "ase>=3.16",
-        "tensorboardX",
         "h5py"
     ]
 )

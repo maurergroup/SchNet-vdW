@@ -43,41 +43,43 @@ class SpkVdwCalculator(SpkCalculator):
     stress = Properties.stress
     hirsh_volrat = "hirshfeld_volumes"
     implemented_properties = [energy, forces, stress, "hirsh_volrat"]
-
     def __init__(
-        self,
-        model,
-        hirshfeld_model = None,
-        device="cpu",
-        collect_triples=False,
-        environment_provider=SimpleEnvironmentProvider(),
-        energy=None,
-        forces=None,
-        stress=None,
-        hirsh_volrat=None,
-        energy_units="eV",
-        forces_units="eV/Angstrom",
-        stress_units="eV/Angstrom/Angstrom/Angstrom",
-        energy_shift=None,
-        **kwargs
-    ):
-
-        #initialise base class
-        SpkCalculator.__init__(
             self,
             model,
-            device,
-            collect_triples,
-            environment_provider,
-            energy,
-            forces,
-            stress,
-            energy_units=energy_units,
-            forces_units=forces_units,
-            stress_units=stress_units,
-            energy_shift=energy_shift,
+            hirshfeld_model = None,
+            device="cpu",
+            collect_triples=False,
+            environment_provider=SimpleEnvironmentProvider(),
+            energy=None,
+            forces=None,
+            stress=None,
+            hirsh_volrat=None,
+            energy_units="eV",
+            forces_units="eV/Angstrom",
+            stress_units="eV/Angstrom/Angstrom/Angstrom",
+            energy_shift=None,
+            #n_models = int(1),
+            **kwargs
+    ):
+
+        #query_results = {}
+        #initialise base class
+        SpkCalculator.__init__(
+                self,
+                model,#[qbc_model],
+                device,
+                collect_triples,
+                environment_provider,
+                energy,
+                forces,
+                stress,
+                energy_units=energy_units,
+                forces_units=forces_units,
+                stress_units=stress_units,
+                energy_shift=energy_shift,
             *kwargs)
-        
+      
+
         #do additional things that are not already done by base init
         self.hirshfeld_model = hirshfeld_model
         self.energy_shift = energy_shift
@@ -85,39 +87,45 @@ class SpkVdwCalculator(SpkCalculator):
             self.hirshfeld_model.to(device)
         else:
             self.hirsh_volrat=hirsh_volrat
+            self.model_hirshfeld = hirsh_volrat
 
-        self.model_hirshfeld = hirsh_volrat
+        def calculate(self, atoms=None, properties=["energy"], system_changes=all_changes):
+            """
+            Args:
+                atoms (ase.Atoms): ASE atoms object.
+                properties (list of str): do not use this, no functionality
+                system_changes (list of str): List of changes for ASE.
+            """
 
-    def calculate(self, atoms=None, properties=["energy"], system_changes=all_changes):
-        """
-        Args:
-            atoms (ase.Atoms): ASE atoms object.
-            properties (list of str): do not use this, no functionality
-            system_changes (list of str): List of changes for ASE.
-        """
+            SpkCalculator.calculate(
+                self,
+                atoms,
+                properties, 
+                system_changes
+            )
 
-        SpkCalculator.calculate(
-            self,
-            atoms,
-            properties, 
-            system_changes
-        )
-
-        if self.calculation_required(atoms, properties):
-                   
-            if self.model_hirshfeld is not None:
-                model_inputs = self.atoms_converter(atoms)
-                hirshfeld_model_results = self.hirshfeld_model(model_inputs)
-                if self.hirsh_volrat not in hirshfeld_model_results.keys():
-                    raise SpkVdwCalculatorError(
-                       "Your model does not support hirshfeld volume rations. Please check the model"
-                       )
-                hirshfeld = hirshfeld_model_results[self.hirsh_volrat].cpu().data.numpy()
-                self.results["hirsh_volrat"] = hirshfeld.reshape(-1)            
-        if self.energy_shift is not None:
-           self.results["energy"] += self.energy_shift
-    def get_hirsh_volrat(self): 
-        if ('output' in self.parameters and
-           'hirsh_volrat' not in self.parameters['output']):
-                raise NotImplementedError
-        return Calculator.get_property(self, 'hirsh_volrat', self.atoms)
+            if self.calculation_required(atoms, properties):
+                       
+                if self.model_hirshfeld is not None:
+                    model_inputs = self.atoms_converter(atoms)
+                    hirshfeld_model_results = self.hirshfeld_model(model_inputs)
+                    if self.hirsh_volrat not in hirshfeld_model_results.keys():
+                        raise SpkVdwCalculatorError(
+                           "Your model does not support hirshfeld volume rations. Please check the model"
+                           )
+                    hirshfeld = hirshfeld_model_results[self.hirsh_volrat].cpu().data.numpy()
+                    self.results["hirsh_volrat"] = hirshfeld.reshape(-1)            
+            if self.energy_shift is not None:
+               self.results["energy"] += self.energy_shift
+                    
+            """for prop in self.results:
+                 if prop in query_results:
+                     query_results[prop] += results[prop]/n_models
+                 else:
+                     query_results[prop] = results[prop]/n_models
+            self.results = query_results"""
+            def get_hirsh_volrat(self): 
+                if ('output' in self.parameters and
+                'hirsh_volrat' not in self.parameters['output']):
+                     raise NotImplementedError
+                return Calculator.get_property(self, 'hirsh_volrat', self.atoms)
