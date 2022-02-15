@@ -36,8 +36,6 @@ The following installation procedure is recommended when using anaconda:
 7. Set your LD_LIBRARY_PATH to the lib-folder of your anaconda environment. e.g. ``export LD_LIBRARY_PATH=/home/software/anaconda3/envs/vdw/lib``
 
 
-Note that installation does not work via Conda and will report conflicts.
-
 .. _Python: http://www.python.org/
 .. _NumPy: http://docs.scipy.org/doc/numpy/reference/
 .. _SciPy: http://docs.scipy.org/doc/scipy/reference/
