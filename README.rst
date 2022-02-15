@@ -63,7 +63,7 @@ GETTING STARTED:
    
    The input file is called B2O.in. The files will be saved in the OptX2O-folder. The path of the ML models for energies and forces. The path for hirshfeld models can be        indicated via --hirshfeld_modelpath; --vdw specifies the type of vdW-correction. --ts can be used to specify TS or TSSurf. The Hessianfile-flag can be set to specify an initial Hessian guess. --kgrid can be used in case a k-grid is needed for calculations. The output will be saved in the "opt.log" file in the corresponding folder.
    
-   Hessian input: In case you want to initialize optimizations with a Lindh-Hessian, you can use the Lindh.py file provided by Dimitrii Maksimov. Execute: ``python2.7 ../src/scripts/Lindh.py B2O.in --full HessianB2O.dat``. 
+   Hessian input: In case you want to initialize optimizations with a Lindh-Hessian, you can use the Lindh.py file provided by within FHI-aims (https://gitlab.com/users/sign_in). Alternatively, you can use Lindh-Hessian generation scripts from the gensec repository (https://github.com/sabia-group/gensec).
     
 
 
