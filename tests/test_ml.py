@@ -119,7 +119,8 @@ if __name__ == '__main__':
                                                  extrapolate = args.extrapolate,
                                                  adaptive_fmax = args.adaptive_fmax,
                                                  qbc = args.qbc,
-                                                 logfile = args.path + "/opt.log")
+                                                 logfile = args.path + "/opt.log",
+                                                 mode=args.mode)
  
     vdw_calc = MBD(
         scheme=args.vdw, #VDW or MBD

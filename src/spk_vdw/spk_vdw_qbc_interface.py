@@ -116,7 +116,7 @@ class SpkVdwCalculator(SpkCalculator):
                     adaptive_fmax = adaptive_fmax,
                     qbc = qbc,
                     logfile = logfile,
-                    *kwargs)
+                    **kwargs)
       
         #do additional things that are not already done by base init
         self.hirshfeld_model = hirshfeld_model
@@ -134,7 +134,7 @@ class SpkVdwCalculator(SpkCalculator):
                   
         # define if system is known to the model    
         # false if structure is included in the training set; false is default
-        self.bh=False
+        self.bh = kwargs["mode"]
         self.extrapolate = extrapolate
         self.current_fmax = np.inf
         self.previous_fmax = self.current_fmax
@@ -185,8 +185,7 @@ class SpkVdwCalculator(SpkCalculator):
                     self.nsteps_fmax = 0
                     self.bh = True
                     bhstep = file[len(file)-1].split()[2]
-                    os.system("mv Stopped_untrustworthy Stopped_untrusstworthy_%s"%bhstep[:len(bhstep)-1])
-                    os.system("mv Stopped Stopped_%s"%bhstep[:len(bhstep)-1])
+                    #os.system("mv Stopped Stopped_%s"%bhstep[:len(bhstep)])
                     self.previous_fmax = np.inf
                     #next bh step starts, set fmax reached to False
                     self.reached_fmax=False 
@@ -233,7 +232,7 @@ class SpkVdwCalculator(SpkCalculator):
                 else:
                     self.nsteps = 0
                     print("Evar: %i %f " %(self.nsteps,self.results['energyvar']))
-                if self.nsteps >= int(3) or (abs(self.vdwener-self.previous_ener)>1 and self.bh==False) or (self.current_fmax>3 and self.bh==False) or (self.results["energyvar"]>1 and self.bh==False):
+                if self.nsteps >= int(4)  or (abs(self.vdwener-self.previous_ener)>1 and self.bh==False) or (self.current_fmax>3 and self.bh==False) or (self.results["energyvar"]>1 and self.bh==False):
                     self.end = True
               
                 if self.current_fmax > self.previous_fmax:
@@ -270,11 +269,13 @@ class SpkVdwCalculator(SpkCalculator):
           if self.end == True:
             if self.results['energyvar']>1: 
                 os.system("echo 'Terminated optimization early with energy variance %f.' >> Stopped_untrustworthy"%self.results['energyvar'])
+                #os.system("mv Stopped_untrustworthy Stopped_untrusstworthy_%s"%bhstep[:len(bhstep)])
             else: 
                 pass
                 #os.system("echo 'Terminated optimization early but still likely to be trustworthy.' >> Stopped")
-            self.results["forces"]=self.results["forces"]*0.0 #exit()
-            self.results["forces"]=np.ma.masked_equal(self.results["forces"],0.0)
+          if self.end == True and self.bh == False:
+                self.results["forces"]=self.results["forces"]*0.0 #exit()
+                self.results["forces"]=np.ma.masked_equal(self.results["forces"],0.0)
           """print("Energy mean ",self.results["energymean"])
           print("Energy var ", self.results["energyvar"])
           print("Fmax ", self.results["fmax"])

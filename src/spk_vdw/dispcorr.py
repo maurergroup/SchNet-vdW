@@ -68,7 +68,7 @@ class DispersionCorrectionCalculator(Calculator):
 
         # Check if the QM-calculator support Hirshfeld-paritioning and inform
         # user about missing Hirshfeld-Treatment.
-        if str(self.mm_calculator) is 'MBD':
+        if str(self.mm_calculator) == 'MBD':
             qmcalc = self.qm_calculator
             if not hasattr(qmcalc, 'get_hirsh_volrat'):
                 print(error_head)
@@ -77,7 +77,7 @@ class DispersionCorrectionCalculator(Calculator):
                 print(' |  partitioning. Defaulting to v_hirsh/v_free = bulk_value')
                 print(error_tail + '\n')
 
-        if str(self.qm_calculator) is 'Aims':
+        if str(self.qm_calculator) == 'Aims':
             self.reset = True
         if str(self.qm_calculator) in ['SpkVdwCalculator','SpkCalculator']:
             self.reset = False

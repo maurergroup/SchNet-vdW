@@ -4,7 +4,7 @@
 #python test_ml.py AuC_geometry.in OptAuC MLModels/Au_C/EF/ --hirshfeld_modelpath MLModels/Au_C/Hirshfeld/ --vdw mbd --ts TS --nmodels 4 --qbc > OptAuC/opt.log
 
 # To run bh, simply add "--mode bh". The default is "opt".
-# e.g.:
+# e.g. (note that early stopping is disabled for bh but can be enabled by removing " and self.bh == False" in line 276 in src/spk_vdw/spk_vdw_qbc_interface.py):
 # python test_ml.py AuC_geometry.in OptAuC MLModels/Au_C/EF --hirshfeld_modelpath MLModels/Au_C/Hirshfeld --vdw mbd --ts TS --nmodels 4 --qbc --mode bh > OptAuC/opt.log
 
 #X2O
