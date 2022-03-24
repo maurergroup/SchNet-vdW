@@ -18,7 +18,7 @@ setup(
     scripts=[],
     python_requires='>=3.6',
     install_requires=[
-        "torch>=0.4.1",
+        "torch>=1",
         "numpy",
         "ase>=3.16",
         "h5py"
