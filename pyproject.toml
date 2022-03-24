@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-    "torch>=0.4.1",
+    "torch>=1",
     "numpy",
     "ase>=3.16",
     "tensorboardX",
