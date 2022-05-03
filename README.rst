@@ -1,12 +1,12 @@
 This is a repository of a SchNetPack Calculator capable to predict energies, forces, and Hirshfeld volume ratios that can subsequently be used to correct energies and forces using many-body dispersion correction or van der Waals correction. It is based on the Atomic Simulation Environment (ASE) and SchNetPack. 
-Installation with anaconda is recommended.
+Installation with Anaconda is recommended.
 
 Requirements:
 1. SchNetPack
 2. ASE
 3. Libmbd
 
-The following installation procedure is recommended when using anaconda:
+The following installation procedure is recommended when using Anaconda:
 
 1. Download Anaconda (https://docs.anaconda.com/) and install the latest version (we used 3.9.7 when creating this README file):
     i. ``wget https://repo.anaconda.com/archive/Anaconda3-2021.11-Linux-x86_64.sh``
@@ -48,8 +48,8 @@ GETTING STARTED:
 
 1. Go into the SchNet-vdW/tests folder.
 
-2a. Running DFT optimizations: Note that you need fhi-aims for this purpose
-   Execute one of the available python scripts that contain "mbd" in their names.
+2a. Running DFT optimizations: Note that you need FHI-aims for this purpose
+   Execute one of the available Python scripts that contain "mbd" in their names.
    
 2b. Running ML optimizations:
 
@@ -79,7 +79,7 @@ Example for installing Libmbd on Cray:
 ``export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/opt/cray/xpmem/2.2.40-7.0.1.0_2.7__g1d7a24d.shasta/lib64/pkgconfig``
 
 
-2. install libmbd via:
+2. Install Libmbd via:
     a. ``wget https://github.com/libmbd/libmbd/releases/download/0.12.3/libmbd-0.12.3.tar.gz``
     b. ``tar -xf libmbd-0.12.3.tar.gz``
     c. ``python -m venv venv --system-site-packages``
@@ -88,7 +88,7 @@ Example for installing Libmbd on Cray:
     f. ``make -C build install``
     g. ``env LIBMBD_PREFIX=$VIRTUAL_ENV pip install pymbd[mpi,test]==0.12.3``
 
-3. you can test it by running: 
+3. The installation can be tested by running: 
 ``time srun --cpu_bind=cores --distribution=block:cyclic --hint=nomultithread python -m pymbd.benchmark --finite``
 
 4. Upgrade pip via:
