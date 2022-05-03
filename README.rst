@@ -19,7 +19,7 @@ Requirements:
 
 5. Download the code to use ML models for Hirshfeld volume ratios: ``wget https://figshare.com/ndownloader/files/34002485?private_link=78b54de875cfb9cadbdd``. After this: ``unzip 34002485?private_link=78b54de875cfb9cadbdd``. After changing into the ``SchNet_EV-AuC_stable`` directory, install it via ``python setup.py install``
 
-6. Install SchNet-vdW by changing into the ``SchNet-vdW`` directory and running ``python setup.py install``. After this, change into the ``src/spk_vdw`` directory and compile the code by executing the commands written in the files ``build_options_sdc_gnu`` or ``uild_options_sdc``. This should generate a file called ``dc.cpython-...-gnu.so``. Copy this file to ``sdc.so``.
+6. Install SchNet-vdW by changing into the ``SchNet-vdW`` directory and running ``python setup.py install``. After this, change into the ``src/spk_vdw`` directory and compile the code by executing the commands written in the files ``build_options_sdc_gnu`` or ``build_options_sdc``. This should generate a file called ``dc.cpython-...-gnu.so``. Copy this file to ``sdc.so``.
 
 7. Set your ``LD_LIBRARY_PATH`` variable to the ``lib`` directory of your Anaconda environment. e.g. ``export LD_LIBRARY_PATH=/home/software/anaconda3/envs/vdw/lib``
 
