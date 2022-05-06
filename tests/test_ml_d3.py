@@ -22,7 +22,8 @@ from ase.optimize.basin import BasinHopping
 from ase.constraints import FixAtoms
 from ase.visualize import view
 from ase.calculators.aims import Aims
-
+from ase.calculators.dftd3 import DFTD3
+#see https://wiki.fysik.dtu.dk/ase/ase/calculators/dftd3.html
 
 def get_parser():
     """ Setup parser for command line arguments """
@@ -35,7 +36,7 @@ def get_parser():
     parser.add_argument('--force_mask',help='Atom number of excluded atom for force training', type=int,default=0)
     parser.add_argument('--vdw',help='Define the type of vdw correction. Options: vdw, mbd', default = 'vdw', type = str)
     parser.add_argument('--ts',help='Define the type of vdw correction. Options: TS, TSsurf', default = 'TS', type = str)
-    parser.add_argument('--fmax',help='Temperature for Basin Hopping algorithm', default = 0.05, type = float)
+    parser.add_argument('--fmax',help='Final fmax to be reached', default = 0.05, type = float)
     parser.add_argument('--temp',help='Temperature for Basin Hopping algorithm', default = 300, type = int)
     parser.add_argument('--mode',help='Define the type of calculations. Options: optimization (key: opt), basin hopping (key: bh)', default = 'opt', type = str)
     parser.add_argument('--dr', help = "Maximal stepwidth in basin hopping.", default = 0.5, type = float)
@@ -52,8 +53,6 @@ def get_parser():
     parser.add_argument('--nmodels', help = "specify the number of ML models to use", default = 1, type = int)
     parser.add_argument('--nhmodels', help = "specify the number of Hirshfeld models to use", default = 1, type = int)
     parser.add_argument('--bhsteps', help = "Number of basin hopping steps", default = 100, type = int)
-    parser.add_argument('--dftd4', help= "Enable Grimmes DFTD4 dispersion correction. Ignores any other input", action='store_true')
-    parser.add_argument('--functional_d4', help = "Specify functional for Grimmes DFTD4 dispersion correction", default = "pbe", type = str)
     return parser
 
 if __name__ == '__main__':
@@ -89,17 +88,6 @@ if __name__ == '__main__':
         environment_provider[i]=get_environment_provider(force_model_args[i],device=device)
 
     #do the same for the hirshfeld model
-    if args.dftd4 == True:
-        nhmodels = 0
-        hirshfeld_model[0]= None
-        ase.io.write("tmp.xyz",ase.io.read(args.initialcondition))
-    else:
-        nhmodels = args.nhmodels
-    for i in range(nhmodels):
-        hirshfeld_model[i] = torch.load(os.path.join(args.hirshfeld_modelpath+"/Model%i/"%(i+1),"best_model"),map_location=device)
-        hirshfeld_model_args[i] = spk.utils.read_from_json(os.path.join(args.hirshfeld_modelpath+"/Model%i/"%(i+1),"args.json"))
-        if hirshfeld_model_args[i].parallel == True and device == "cpu": #and args.device == "gpu":
-            hirshfeld_model[i] = hirshfeld_model[i].module
     
     #read atoms object
     atoms_init = ase.io.read(args.initialcondition)
@@ -114,37 +102,27 @@ if __name__ == '__main__':
     else:
         stress = None
     qm_calc = spk_vdw_qbc_interface.SpkVdwCalculator(force_model,
-                                                 hirshfeld_model = hirshfeld_model,
                                                  device = device,
                                                  energy = spk.Properties.energy,
                                                  forces = spk.Properties.forces,
+                                                 stress = stress,
                                                  hirsh_volrat = "hirshfeld_volumes",
                                                  energy_units = 'eV', forces_units='eV/A',
                                                  environment_provider = environment_provider,
                                                  fmax=args.fmax,
                                                  nmodels = args.nmodels,
-                                                 nhmodels = nhmodels,
+                                                 nhmodels = 0,
                                                  extrapolate = args.extrapolate,
                                                  adaptive_fmax = args.adaptive_fmax,
                                                  qbc = args.qbc,
                                                  logfile = args.path + "/opt.log",
-                                                 dftd4 = args.dftd4,
-                                                 functional = args.functional_d4,
                                                  mode=args.mode)
  
-    vdw_calc = MBD(
-        scheme=args.vdw, #VDW or MBD
-        params=args.ts,  #TS or TSsurf
-        ts_sr=0.94,  #for vdw
-        #beta = 0.83 #for MBD
-        k_grid=kgrid)
-    
-    dispcorr = DispersionCorrectionCalculator(
-                qm_calculator = qm_calc,
-                mm_calculator = vdw_calc,
-                )
 
-    atoms_init.set_calculator(dispcorr)
+    d3=DFTD3(dft=qm_calc)
+
+
+    atoms_init.set_calculator(d3)
     #c=ase.constraints.FixAtoms(indices=[atom.index for atom in atoms_init if atom.symbol == 'C'] )
     #atoms_init.set_constraint(c) #ase.constraints.FixAtoms(np.arange(686)))
     if args.mode == "opt":
