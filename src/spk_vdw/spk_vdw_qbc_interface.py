@@ -15,12 +15,13 @@ References
 import os
 import torch
 from ase import units
+import ase.io
 from schnetpack.interfaces import SpkCalculator
 from schnetpack.environment import SimpleEnvironmentProvider
 from ase.calculators.calculator import Calculator, all_changes
 from schnetpack import Properties
 import numpy as np
-
+import json
 from schnetpack.data.atoms import AtomsConverter
 from schnetpack.utils.spk_utils import DeprecationHelper
 from ase.io import read, write
@@ -40,8 +41,6 @@ from schnetpack.md.utils import MDUnits
 from schnetpack.environment import SimpleEnvironmentProvider
 
 
-class SpkVdwCalculatorError(Exception):
-    pass #TODO RJM This doesnt look right. Errors should never pass? Is this being used?
 
 
 class SpkVdwCalculator(SpkCalculator):
@@ -86,15 +85,19 @@ class SpkVdwCalculator(SpkCalculator):
             adaptive_fmax = None,
             qbc = None,
             logfile = 'opt.log',
+            dftd4 = None,
+            functional = "pbe",
             **kwargs
     ):
 
         #query_results = {}
         #initialise base class
         self.qbc = qbc
+        self.dftd4 = dftd4
         self.nmodels = nmodels
         #number of hirshfeld models
         self.nhmodels = nhmodels
+        self.functional = functional
         # idea is to initialize n calculators that all have a different model
         QueryCalculator.__init__(
                     self,
@@ -173,6 +176,26 @@ class SpkVdwCalculator(SpkCalculator):
             system_changes
         )
         # save the previous step
+        if self.dftd4 == True:
+            # read latest geometry step
+            try:
+                # for the first step, tmp.xyz is already provided
+                latest_geom = ase.io.read(self.logfile[:-3]+"traj",-1)
+                ase.io.write("tmp.xyz",latest_geom)
+            except:
+                pass
+            # write out latest geometry step
+            # conduct dftd4 calculation
+            os.system("dftd4 --func %s --json --grad --noedisp tmp.xyz" %self.functional)
+
+            # read in json file that is written by dftd4
+            f = open('dftd4.json')
+            dftd4data = json.load(f)
+            print(dftd4data)
+            print(self.results.keys())
+            self.results["energy"] -= np.array(dftd4data["energy"])
+            # + because gradient
+            self.results["forces"] += np.array(dftd4data["gradient"]).reshape(int(len(dftd4data["gradient"])/3),3)
         if self.qbc != None: 
           try:
             file = open(self.logfile,"r").readlines()    
@@ -385,11 +408,7 @@ class QueryCalculator(Calculator):
                 # Convert outputs to calculator format
                 if self.model_energy is not None:
                     if self.model_energy not in model_results.keys():
-                        raise SpkCalculatorError(
-                            "'{}' is not a property of your model. Please "
-                            "check the model "
-                            "properties!".format(self.model_energy)
-                        )
+                        print("'{}' is not a property of your model. Please check the model properties!".format(self.model_energy))
                     energy = model_results[self.model_energy].cpu().data.numpy()
                     if self.energy in self.query_results:
                         self.query_results[self.energy][qbc]=(energy.item() * self.energy_units)
@@ -401,11 +420,7 @@ class QueryCalculator(Calculator):
 
                 if self.model_forces is not None:
                     if self.model_forces not in model_results.keys():
-                        raise SpkCalculatorError(
-                            "'{}' is not a property of your model. Please "
-                            "check the model"
-                            "properties!".format(self.model_forces)
-                        )
+                        print("'{}' is not a property of your model. Please check the model properties!".format(self.model_forces))
                     forces = model_results[self.model_forces].cpu().data.numpy()
                     if self.forces in self.query_results:
                         self.query_results[self.forces][qbc] = (
@@ -417,19 +432,13 @@ class QueryCalculator(Calculator):
 
                 if self.model_stress is not None:
                     if atoms.cell.volume <= 0.0:
-                        raise SpkCalculatorError(
-                            "Cell with 0 volume encountered for stress computation"
-                        )
+                        print("Cell with 0 volume encountered for stress computation")
 
                     if self.model_stress not in model_results.keys():
-                        raise SpkCalculatorError(
-                            "'{}' is not a property of your model. Please "
-                            "check the model"
-                            "properties! If desired, stress tensor computation can be "
-                            "activated via schnetpack.utils.activate_stress_computation "
-                            "at ones own risk.".format(self.model_stress)
-                        )
-                    stress = model_results[self.model_stress].cpu().data.numpy()
+                        print("'{}' is not a property of your model. Please check the model properties! Set to 0 for now".format(self.model_stress))
+                        stress = model_results[self.model_stress] = np.zeros((3,3))
+                    else:
+                        stress = model_results[self.model_stress].cpu().data.numpy()
                     self.query_results[self.stress] = stress.reshape((3, 3)) * self.stress_units
                 
             for qbc_h in range(self.nhmodels):
