@@ -13,11 +13,10 @@ Requirements:
 
 2. Make sure you can create environments: ``conda config --append channels conda-forge``
 
-3. Install pymbd (https://pypi.org/project/pymbd/): ``conda install -c conda-forge libmbd``. Install pip if you don't have it (``conda install pip``) and finally ``pip install pymbd``
+3. Install pymbd (https://pypi.org/project/pymbd/): ``conda install -c conda-forge libmbd``. Install pip if you don't have it (``conda install pip``) and finally ``pip install pymbd`` Attention: please install pymbd before schnetpack. If it's done the other way around, conflicts may arise.
 
-4. Install SchNetPack including all requirements (for the correct PyTorch CUDA combination, see: https://pytorch.org/get-started/locally/). A suggested installation procedure is: ``pip install schnetpack``
-
-5. Download the code to use ML models for Hirshfeld volume ratios: ``wget https://figshare.com/ndownloader/files/34002485?private_link=78b54de875cfb9cadbdd``. After this: ``unzip 34002485?private_link=78b54de875cfb9cadbdd``. After changing into the ``SchNet_EV-AuC_stable`` directory, install it via ``python setup.py install``
+4. Install SchNetPack using this repository: https://github.com/juliawestermayr/schnetpack and install all requirements (``pip install -r requirements.txt`` in the ``schnetpack`` directory) to train on hirshfeld volume ratios. A tutorial is provided on figshare: 10.6084/m9.figshare.19134602
+If you don't want to follow the tutorial, but just want to do some optimizations with the existing code and ML models, please download the code to use ML models for Hirshfeld volume ratios: ``wget https://figshare.com/ndownloader/files/34002485?private_link=78b54de875cfb9cadbdd``. After this: ``unzip 34002485?private_link=78b54de875cfb9cadbdd``. After changing into the ``SchNet_EV-AuC_stable`` directory, install it via ``python setup.py install``
 
 6. Install SchNet-vdW by changing into the ``SchNet-vdW`` directory and running ``python setup.py install``
 
@@ -34,6 +33,8 @@ Requirements:
 
 Getting Started:
 ================
+
+We provide a short tutorial including training of ML models on figshare (10.6084/m9.figshare.19134602), if you are not interested and want to test optimization, please follow the procedure below.
 
 1. Change into the ``SchNet-vdW/tests`` directory.
 
