@@ -71,3 +71,6 @@ Example for installing Libmbd on Cray:
 4. Upgrade pip via ``pip install --upgrade pip setuptools wheel``
 
 5. Install SchNetPack and Spk-vdw (this repository) as outlined above.
+
+
+The tagged version v0.1 was used for arXiv:2202.13009v1 and for tutorials provided on figshare: https://figshare.com/articles/software/SchNet_vdW/19134602
