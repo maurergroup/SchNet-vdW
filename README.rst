@@ -7,7 +7,7 @@ Installation Procedure
 Requirements:
 1. SchNetPack
 2. ASE
-3. Libmbd
+3. Libmbd (attention: only works on Mac or Linux)
 
 1. Download Anaconda (https://docs.anaconda.com/) and install the latest version (we used 3.9.7 when creating this README file): ``wget https://repo.anaconda.com/archive/Anaconda3-2021.11-Linux-x86_64.sh`` and then ``sh Anaconda3-2021.11-Linux-x86_64.sh`` 
 
